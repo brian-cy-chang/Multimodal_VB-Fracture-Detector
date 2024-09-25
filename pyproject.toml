@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "multi-modal"
+version = "0.1.0"
+description = ""
+authors = ["bcc92 <bcc92@uw.edu>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+numpy = "^1.26.4"
+scikit-learn = "^1.4.1"
+matplotlib = "^3.8.3"
+jupyter = "^1.0.0"
+jupyterlab = "^4.1.5"
+keras-tuner = "^1.4.7"
+torch = "^2.2.2"
+torchvision = "^0.17.2"
+pandas = "^1.5.1"
+tensorflow = "^2.15"
+keras = "^3.2.1"
+ray = "^2.20.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
