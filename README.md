@@ -32,13 +32,13 @@ As the multimodal models leverage outputs from other models, please refer to the
 
 | image_id                      | PatientSex         | Age (years)              | Race                                 | MultipleRaces  | Ethnicity | subject_id
 |-------------------------------|--------------------|--------------------------|--------------------------------------|-------------|--------------|------------|
-| *string*                      | "M" or "F"         | *float* or *int*         | White", "Asian", "Black or African American", etc. | "Asian;Native Hawaiian or Other Pacific Islander", "Black or African American;American India or Alaska Native", etc.  | "Hispanic or Latino", "Not Hispanic or Latino", etc. | *string* 
+| *string*                      | "M" or "F"         | *float* or *int*         | "White", "Asian", "Black or African American", etc. | "Asian;Native Hawaiian or Other Pacific Islander", "Black or African American;American India or Alaska Native", etc.  | "Hispanic or Latino", "Not Hispanic or Latino", etc. | *string* 
 
 ### Multimodal Models
 Two modes are available: `train` or `predict`. Model training can be done *de novo* or from a model checkpoint. Please refer to the configuration file for each parameter setting. Command line parameters will override those set in the configuration file. 
 
 ```Python
-python main.py [--parameter] # optional to override config.ini parameters
+python main.py [--parameter]
 ```
 
 ## Acknowledgments
