@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "multi-modal"
+name = "multimodal"
 version = "0.1.0"
 description = ""
 authors = ["bcc92 <bcc92@uw.edu>"]
@@ -16,9 +16,8 @@ keras-tuner = "^1.4.7"
 torch = "^2.2.2"
 torchvision = "^0.17.2"
 pandas = "^1.5.1"
-tensorflow = "^2.15"
-keras = "^3.2.1"
 ray = "^2.20.0"
+tqdm = "^4.66.5"
 
 
 [build-system]
