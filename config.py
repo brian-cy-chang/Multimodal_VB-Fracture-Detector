@@ -28,7 +28,7 @@ class Config:
 
     [staticmethod]
     def get_resultfolder(subfolder=None):
-        folder = Config.result_folder + "_" + Config.getstr("bert", "bert_mode")
+        folder = Config.result_folder
         if subfolder is not None:
             folder=os.path.join(Config.result_folder, subfolder)
         os.makedirs(folder, mode=0o777, exist_ok=True)
