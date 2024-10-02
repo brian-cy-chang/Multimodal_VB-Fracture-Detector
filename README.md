@@ -58,4 +58,9 @@ This framework leverages [BERT-EE](https://github.com/wilsonlau-uw/BERT-EE) to p
 
 ## References
 <a id="1">[1]</a>
-[![DOI: 10.1007/s00198-022-06546-0](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10246552/)
+*H. L. Aaltonen et al.*, **“m2ABQ-a proposed refinement of the modified algorithm-based qualitative classification of osteoporotic vertebral fractures,”** Osteoporos Int, Nov. 2022, [![DOI: 10.1007/s00198-022-06546-0](https://zenodo.org/badge/DOI/10.1007/s00198-022-06546-0.svg)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10246552/).
+
+
+
+
+
