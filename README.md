@@ -7,7 +7,7 @@ The model architectures in this repository are mainly a joint fusion-like and la
 ![Joint Fusion CNN Losses](https://github.com/brian-cy-chang/Multimodal_VB-Fracture_Detector/blob/main/assets/jointfusion_cnn_losses.jpg?raw=true)
 
 ## Installation
-The models require installing a local environment with `python>=3.9` and `torch>=2.2.2` and `torchvision>=0.17.2` using [Poetry](https://python-poetry.org/). Please follow the instructions below to set up the environment. 
+The models require installing a local environment with `python>=3.9`, `torch>=2.2.2` and `torchvision>=0.17.2` using [Poetry](https://python-poetry.org/). Please follow the instructions below to set up the environment. 
 
 ```bash
 git clone https://github.com/brian-cy-chang/Multimodal_VB-Fracture-Detector.git
@@ -26,7 +26,7 @@ Note:
 ## Getting Started
 ### Datasets
 As the multimodal models leverage outputs from other models, please refer to the configuration file, `config.ini`, and set the paths for each, respectively.
-1. The BERT-based model outputs can be produced by the ensemble models found at [BERT-EE-Ensemble-Fractures](https://github.com/brian-cy-chang/Multimodal_VB-Fracture_Detector).
+1. The BERT-based model outputs can be produced by the ensemble models found at [BERT-EE-Ensemble-Fractures](https://github.com/brian-cy-chang/BERT-EE-Ensemble-Fractures).
 2. The VB classification results can be produced by an imaging analysis pipeline found at [OCFScreener](). Please follow instructions to gain access to the source code.
 3. Please obtain patient demographics for your dataset. The data should follow the general format below.
 
