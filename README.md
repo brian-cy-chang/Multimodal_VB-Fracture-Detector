@@ -1,4 +1,4 @@
-# Multimodal VB Fracture Detector: A framework for clinical multimodal predicitve models 
+# Multimodal VB Fracture Detector: A framework for clinical multimodal predictive models 
 
 The multimodal VB fracture detector leverages different modalities, including fracture events from clinical notes extracted with [BERT-EE](https://github.com/wilsonlau-uw/BERT-EE), vertebral body (VB) classification results on radiographs from an imaging analysis pipeline, and patient demographics data to predict the presence of VB fractures at the patient-level. Specifically the task is a binary classification of fracture vs. no fracture. 
 
@@ -26,13 +26,18 @@ Note:
 ## Getting Started
 ### Datasets
 As the multimodal models leverage outputs from other models, please refer to the configuration file, `config.ini`, and set the paths for each, respectively.
-1. The BERT-based model outputs can be produced by the ensemble models found at [BERT-EE-Ensemble-Fractures](https://github.com/brian-cy-chang/BERT-EE-Ensemble-Fractures).
+1. The BERT-based model outputs can be produced by the ensemble models found at [BERT-EE_Ensemble-Fractures](https://github.com/brian-cy-chang/BERT-EE_Ensemble-Fractures).
 2. The VB classification results can be produced by an imaging analysis pipeline found at [OCFScreener](). Please follow instructions to gain access to the source code.
 3. Please obtain patient demographics for your dataset. The data should follow the general format below.
 
 | image_id                      | PatientSex         | Age (years)              | Race                                 | MultipleRaces  | Ethnicity | subject_id
 |-------------------------------|--------------------|--------------------------|--------------------------------------|-------------|--------------|------------|
 | *string*                      | "M" or "F"         | *float* or *int*         | "White", "Asian", "Black or African American", etc. | "Asian;Native Hawaiian or Other Pacific Islander", "Black or African American;American India or Alaska Native", etc.  | "Hispanic or Latino", "Not Hispanic or Latino", etc. | *string* 
+4. The image-level ground truth labels are based on the m2ABQ classification system [[1]](#1) for vertebral compression fractures.
+
+| image_id                      | m2ABQClass         | 
+|-------------------------------|--------------------|
+| *string*                      | "Normal", "Non-fracture Deformity", "mABQ0 Fracture\n(< 20% height loss)", etc.         |
 
 ### Multimodal Models
 Two modes are available: `train` or `predict`. Model training can be done *de novo* or from a model checkpoint. Please refer to the configuration file for each parameter setting. Command line parameters will override those set in the configuration file. 
@@ -51,4 +56,6 @@ This framework leverages [BERT-EE](https://github.com/wilsonlau-uw/BERT-EE) to p
     }
 
 
-
+## References
+<a id="1">[1]</a>
+[![DOI: 10.1007/s00198-022-06546-0](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10246552/)
