@@ -1,4 +1,4 @@
-# Multimodal VB Fracture Detector: A framework for clinical multimodal predictive models 
+# Multimodal Vertebral Body Fracture Detector: A framework for clinical multimodal predictive models 
 
 The multimodal VB fracture detector leverages different modalities, including fracture events from clinical notes extracted with [BERT-EE](https://github.com/wilsonlau-uw/BERT-EE), vertebral body (VB) classification results on radiographs from an imaging analysis pipeline, and patient demographics data to predict the presence of VB fractures at the patient-level. Specifically the task is a binary classification of fracture vs. no fracture. 
 
@@ -33,16 +33,18 @@ As the multimodal models leverage outputs from other models, please refer to the
 | image_id                      | PatientSex         | Age (years)              | Race                                 | MultipleRaces  | Ethnicity | subject_id
 |-------------------------------|--------------------|--------------------------|--------------------------------------|-------------|--------------|------------|
 | *string*                      | "M" or "F"         | *float* or *int*         | "White", "Asian", "Black or African American", etc. | "Asian;Native Hawaiian or Other Pacific Islander", "Black or African American;American India or Alaska Native", etc.  | "Hispanic or Latino", "Not Hispanic or Latino", etc. | *string* 
-4. The image-level ground truth labels are based on the m2ABQ classification system [[1]](#1) for vertebral compression fractures.
+4. The image-level ground truth labels are based on the m2ABQ [[1]](#1) classification system for vertebral compression fractures. The data should follow the general format below.
 
 | image_id                      | m2ABQClass         | 
 |-------------------------------|--------------------|
-| *string*                      | "Normal", "Non-fracture Deformity", "mABQ0 Fracture\n(< 20% height loss)", etc.         |
+| *string*                      | "Normal", "Non-fracture Deformity", "mABQ0 Fracture\n(< 20% height loss)", etc.|
+
+5. For encoding, please refer to `user_params.py` to set custom data dictionaries for data preprocessing.
 
 ### Multimodal Models
 Two modes are available: `train` or `predict`. Model training can be done *de novo* or from a model checkpoint. Please refer to the configuration file for each parameter setting. Command line parameters will override those set in the configuration file. 
 
-```Python
+```python
 python main.py [--parameter]
 ```
 
