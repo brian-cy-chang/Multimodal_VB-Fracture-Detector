@@ -180,6 +180,19 @@ class preprocess(Dataset):
 
         return self.__vb_tensors
     
+    def get_vbs_to_tensor(self, combined_dict):
+        """
+        Get max vb score
+        """
+        self.__vb_scores = []
+        for image_id in sorted(combined_dict):
+            df = combined_dict[image_id]["vb"]
+            # max_score = np.max(df.ensemble_averaging_predicted_prob)
+            self.__vb_scores.append(df.ensemble_averaging_predicted_prob.values)
+        # self.__vb_tensors = torch.tensor(self.__vb_scores, dtype=torch.float32)
+
+        return self.__vb_scores
+    
     def get_gt_labels_to_tensor(self, label_file, ID_list, fx_labels=uparams.GT_LABELS_DICT):
         UW_annotations_df = pd.read_csv(label_file)
         UW_annotations_df = UW_annotations_df.drop_duplicates()
