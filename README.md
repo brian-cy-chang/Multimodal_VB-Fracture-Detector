@@ -18,7 +18,6 @@ Once the environment is set up, activate the environment.
 ```bash
 poetry shell
 ```
-
 Note:
 1. Please refer to the official [Poetry documentation](https://python-poetry.org/docs/) for installation.
 2. Installing PyTorch requires the proper NVIDIA libraries and drivers. Please install the correct [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit-archive) with a version that matches your PyTorch CUDA version.
@@ -28,7 +27,7 @@ Note:
 As the multimodal models leverage outputs from other models, please refer to the configuration file, `config.ini`, and set the paths for each, respectively.
 1. The BERT-based model outputs can be produced by the ensemble models found at [BERT-EE_Ensemble-Fractures](https://github.com/brian-cy-chang/BERT-EE_Ensemble-Fractures).
 2. The VB classification results can be produced by an imaging analysis pipeline found at [OCFScreener](). Please follow instructions to gain access to the source code.
-3. Please obtain patient demographics for your dataset. The data should follow the general format below.
+3. Please obtain patient demographics for your dataset. The data should follow the data format below.
 
 | image_id                      | PatientSex         | Age (years)              | Race                                 | MultipleRaces  | Ethnicity | subject_id
 |-------------------------------|--------------------|--------------------------|--------------------------------------|-------------|--------------|------------|
@@ -56,7 +55,6 @@ This framework leverages [BERT-EE](https://github.com/wilsonlau-uw/BERT-EE) to p
     author = "Wilson Lau, Kevin Lybarger, Martin L. Gunn, Meliha Yetisgen",    
     url = "https://link.springer.com/article/10.1007/s10278-022-00717-5"
     }
-
 
 ## References
 <a id="1">[1]</a>

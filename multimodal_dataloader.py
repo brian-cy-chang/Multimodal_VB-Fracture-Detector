@@ -97,10 +97,11 @@ class MultimodalDataset(Dataset):
             self.__combined_dict = self.preprocess.combine_modalities(self.vb_path, self.BERT_file, self.pt_dem_file)
             for image_id in sorted(self.__combined_dict):
                 cls_embedding = self.__combined_dict[image_id]["BERT_cls"]
-                bert_tensor = torch.Tensor(cls_embedding).to(torch.float32)
+                bert_tensor = torch.Tensor(cls_embedding).to(torch.float32).squeeze(dim=1)
                 self.__bert_lst.append(bert_tensor)
 
             self.__bert_padded = [F.pad(sequence, (0, 0, Config.getint("bert", "cls_max_length_pad")-sequence.size(0), 0), value=0) for sequence in self.__bert_lst]
+            # self.__bert_padded = [F.pad(sequence, (0, 0, 0, 0, Config.getint("bert", "cls_max_length_pad")-sequence.size(0), 0), value=0) for sequence in self.__bert_lst]
 
         # return combined_dict keys (image IDs) as list
         for filename in list(self.__combined_dict.keys()):
