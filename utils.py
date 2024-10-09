@@ -52,7 +52,7 @@ class WeightedFocalLoss(nn.Module):
         F_loss = at*(1-pt)**self.gamma * BCE_loss
         return F_loss.mean()
 
-class SaveBestModel:
+class SaveBestModel_F1:
     """
     Saves best model based on validation F1 score to .pth file
     """
@@ -74,6 +74,29 @@ class SaveBestModel:
                 'criterion_state_dict': criterion.state_dict(),
                 'f1_score': f1
             }, self.save_path + ".pth")
+
+class SaveBestModel_ValidationLoss:
+    """
+    Saves best model based on validation loss to .pth file
+    """
+    def __init__(self, save_path):
+        self.best_val_loss = float('inf')
+        self.epoch = 0
+        self.save_path = save_path
+
+    def __call__(self, model, optimizer, criterion, epoch, val_loss):
+        if val_loss < self.best_val_loss:
+            self.best_val_loss = val_loss
+            self.epoch = epoch
+            print(f"Saving best model for epoch {epoch+1} with validation loss = {val_loss:.3f}")
+            print(f"\n")
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'criterion_state_dict': criterion.state_dict(),
+                'val_loss': val_loss
+                }, self.save_path + ".pth")
 
 # def sigmoid_focal_loss(
 #     inputs: torch.Tensor,
