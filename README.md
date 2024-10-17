@@ -10,9 +10,9 @@ The model architectures in this repository are mainly a joint fusion-like and la
 The models require installing a local environment with `python>=3.9`, `torch>=2.2.2` and `torchvision>=0.17.2` using [Poetry](https://python-poetry.org/). Please follow the instructions below to set up the environment. 
 
 ```bash
-git clone https://github.com/brian-cy-chang/Multimodal_VB-Fracture-Detector.git
+git clone https://github.com/brian-cy-chang/Multimodal_VB-Fracture-Detector.git & cd Multimodal_VB-Fracture-Detector
 
-cd Multimodal_VB-Fracture-Detector & poetry install
+poetry install
 ```
 Once the environment is set up, activate the environment.
 ```bash
@@ -27,12 +27,12 @@ Note:
 As the multimodal models leverage outputs from other models, please refer to the configuration file, `config.ini`, and set the paths for each, respectively.
 1. The BERT-based model outputs can be produced by the ensemble models found at [BERT-EE_Ensemble-Fractures](https://github.com/brian-cy-chang/BERT-EE_Ensemble-Fractures).
 2. The VB classification results can be produced by an imaging analysis pipeline found at [OCFScreener](). Please follow instructions to gain access to the source code.
-3. Please obtain patient demographics for your dataset. The data should follow the data format below.
+3. Please obtain patient demographics for your dataset. The data should follow the format below.
 
 | image_id                      | PatientSex         | Age (years)              | Race                                 | MultipleRaces  | Ethnicity | subject_id
 |-------------------------------|--------------------|--------------------------|--------------------------------------|-------------|--------------|------------|
 | *string*                      | "M" or "F"         | *float* or *int*         | "White", "Asian", "Black or African American", etc. | "Asian;Native Hawaiian or Other Pacific Islander", "Black or African American;American India or Alaska Native", etc.  | "Hispanic or Latino", "Not Hispanic or Latino", etc. | *string* 
-4. The image-level ground truth labels are based on the m2ABQ [[1]](#1) classification system for vertebral compression fractures. The data should follow the general format below.
+4. The image-level ground truth labels are based on the m2ABQ [[1]](#1) classification system for vertebral compression fractures. The data should follow the format below.
 
 | image_id                      | m2ABQClass         | 
 |-------------------------------|--------------------|
