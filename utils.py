@@ -3,7 +3,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
+# from torch.autograd import Variable
 
 def create_dir(save_dir):
     """
@@ -65,7 +65,7 @@ class SaveBestModel_F1:
         if f1 > self.best_f1:
             self.best_f1 = f1
             self.epoch = epoch
-            print(f"Saving best model for epoch {epoch+1} with validation F1 score = {f1:.3f}")
+            print(f"Saving model at epoch {epoch+1} with validation F1 score = {f1:.4f}")
             print(f"\n")
             torch.save({
                 'epoch': epoch,
@@ -88,7 +88,7 @@ class SaveBestModel_ValidationLoss:
         if val_loss < self.best_val_loss:
             self.best_val_loss = val_loss
             self.epoch = epoch
-            print(f"Saving best model for epoch {epoch+1} with validation loss = {val_loss:.3f}")
+            print(f"Saving model at epoch {epoch+1} with validation loss = {val_loss:.4f}")
             print(f"\n")
             torch.save({
                 'epoch': epoch,
