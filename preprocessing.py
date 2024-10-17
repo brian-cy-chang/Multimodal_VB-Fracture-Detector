@@ -4,7 +4,7 @@ import time
 import datetime
 import pickle
 from os import listdir
-from os.path import isfile, join, splitext
+from os.path import isfile, join
 
 import numpy as np
 import pandas as pd
