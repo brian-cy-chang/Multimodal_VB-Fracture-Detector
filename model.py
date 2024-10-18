@@ -115,9 +115,6 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
         self.__predict_dataset = None
         self.__predict_loader = None
         
-        # set seed
-        torch.manual_seed(Config.getint("general", "seed"))
-
         if self.bert_mode == "discrete":  
             if self.mode == "train":
                 print(f"******** Preparing discrete training dataset with {self.encode_mode} encoding ********")

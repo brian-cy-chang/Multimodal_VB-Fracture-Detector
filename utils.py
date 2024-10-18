@@ -1,4 +1,6 @@
 import os
+import random
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -15,6 +17,15 @@ def create_dir(save_dir):
     """
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
+
+def set_seed(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 def accuracy_fn(tp, tn, total):
     """

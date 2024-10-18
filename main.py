@@ -4,6 +4,7 @@ from config import Config
 from model import Multimodal_VB_Fracture_Detector
 from multimodal.joint_fusion import *
 from multimodal.late_fusion import *
+from utils import set_seed
 
 def main():
     parser = argparse.ArgumentParser()
@@ -49,6 +50,8 @@ def main():
 
     args = parser.parse_args()
     Config.init(args)
+
+    set_seed(Config.getint("general", "seed"))
 
     if Config.getstr("general", "model_name") == "JointFusion_CNN":
         model = Multimodal_VB_Fracture_Detector(JointFusion_CNN)
