@@ -40,6 +40,48 @@ def accuracy_fn(tp, tn, total):
     acc = ((tp+tn) / total) * 100 
     return acc
 
+def calculate_specificity(tn, fp):
+    """
+    Calculate the specificity (True Negative Rate) given the number of true negatives (TN) and false positives (FP).
+
+    Specificity is defined as the proportion of true negatives out of the total number of actual negatives.
+    It is calculated as: specificity = TN / (TN + FP)
+
+    Parameters
+    ----------
+    tn (int): Number of true negatives
+    fp (int): Number of false positives
+
+    Returns
+    -------
+    float: Specificity value. Returns 0 if the denominator (TN + FP) is zero to avoid division by zero.
+    """
+    if (tn + fp) == 0:
+        return 0
+    else:
+        return tn / (tn + fp)
+    
+def calculate_npv(tn, fn):
+    """
+    Calculate the Negative Predictive Value (NPV) given the number of true negatives (TN) and false negatives (FN).
+
+    NPV is defined as the proportion of true negatives out of the total number of predicted negatives.
+    It is calculated as: NPV = TN / (TN + FN)
+
+    Parameters
+    ----------
+    tn (int): Number of true negatives
+    fn (int): Number of false negatives
+
+    Returns
+    -------
+    float: NPV value. Returns 0 if the denominator (TN + FN) is zero to avoid division by zero.
+    """
+    if (tn + fn) == 0:
+        return 0
+    else:
+        return tn / (tn + fn)
+
 class WeightedFocalLoss(nn.Module):
     """
     Non weighted version of Focal Loss

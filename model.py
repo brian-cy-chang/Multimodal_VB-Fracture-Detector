@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 
 import torch
 import torch.nn as nn
@@ -23,7 +23,7 @@ import torch.optim as optim
 
 from config import Config
 # from multimodal_dataloader import MultimodalDataset
-from utils import WeightedFocalLoss
+from utils import WeightedFocalLoss, calculate_specificity, calculate_npv
 import user_params as uparams
 
 def kaiming_init(m):
@@ -485,10 +485,13 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                 
             train_loss_epoch = self.__running_loss / len(self.__train_loader)
 
+            tn, fp, fn, tp = confusion_matrix(self.__train_labels, self.__train_outputs).ravel()
             train_epoch_acc = accuracy_score(self.__train_labels, self.__train_outputs)*100
             train_precision = precision_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
             train_recall = recall_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
             train_f1 = f1_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
+            train_specificty = calculate_specificity(tn, fp)*100
+            train_npv = calculate_npv(tn, fn)*100
 
             ### Evaluation
             self.__model.eval()
@@ -516,20 +519,25 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                     self.__validation_running_loss += validation_loss.item()*validation_label_batch.size(0)
 
                 validation_loss_epoch = self.__validation_running_loss / len(self.__validation_loader)
-
+                
+                validation_tn, validation_fp, validation_fn, validation_tp = confusion_matrix(self.__train_labels, self.__train_outputs).ravel()
                 validation_epoch_acc = accuracy_score(self.__validation_labels, self.__validation_outputs)*100
                 validation_precision = precision_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
                 validation_recall = recall_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
                 validation_f1 = f1_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
+                validation_specificty = calculate_specificity(validation_tn, validation_fp)*100
+                validation_npv = calculate_npv(validation_tn, validation_fn)*100
 
             # 7. Scheduler step
             self.__scheduler.step(validation_loss_epoch)
 
             # safe each epoch training metrics
-            self.__train_metrics[epoch+1] = {'train_loss': train_loss_epoch, 'train_accuracy': train_epoch_acc, 
-                                             "train_precision": train_precision, "train_recall": train_recall, "train_f1": train_f1,
-                                             'validation_loss': validation_loss_epoch, 'validation_accuracy': validation_epoch_acc, 
-                                             "validation_precision": validation_precision, "validation_recall": validation_recall, "validation_f1": validation_f1, 
+            self.__train_metrics[epoch+1] = {'train_loss': train_loss_epoch, 'train_accuracy': train_epoch_acc, "train_specificity": train_specificty,
+                                             "train_precision": train_precision, "train_recall": train_recall, "train_f1": train_f1, "train_npv": train_npv,
+                                             "train_tp": tp, "train_fp": fp, "train_fn": fn, "train_tn": tn,
+                                             'validation_loss': validation_loss_epoch, 'validation_accuracy': validation_epoch_acc, "validation_specificity": validation_specificty,
+                                             "validation_precision": validation_precision, "validation_recall": validation_recall, "validation_f1": validation_f1, "validation_npv": validation_npv,
+                                             "validation_tp": validation_tp, "validation_fp": validation_fp, "validation": validation_fn, "validation_tn": validation_tn,
                                              "learning_rate": self.__scheduler.get_last_lr()[0]}
             
             self.__train_preds[epoch+1] = {"image_id": self.__train_image_ids, "score": self.__train_scores, "pred": self.__train_outputs, "label": self.__train_labels}
@@ -652,10 +660,12 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                 
             train_loss_epoch = self.__running_loss / len(self.__train_loader)
 
+            tn, fp, fn, tp = confusion_matrix(self.__train_labels, self.__train_outputs).ravel()
             train_epoch_acc = accuracy_score(self.__train_labels, self.__train_outputs)*100
             train_precision = precision_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
             train_recall = recall_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
             train_f1 = f1_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
+            train_specificity = tn / (tn+fp)
 
             ### Evaluation
             self.__model.eval()
@@ -691,6 +701,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
 
                 validation_loss_epoch = self.__validation_running_loss / len(self.__validation_loader)
 
+                validation_tn, validation_fp, validation_fn, validation_tp = confusion_matrix(self.__validation_labels, self.__validation_outputs).ravel()
                 validation_epoch_acc = accuracy_score(self.__validation_labels, self.__validation_outputs)*100
                 validation_precision = precision_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
                 validation_recall = recall_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
@@ -701,9 +712,11 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
 
             # safe each epoch training metrics
             self.__train_metrics[epoch+1] = {'train_loss': train_loss_epoch, 'train_accuracy': train_epoch_acc, 
-                                             "train_precision": train_precision, "train_recall": train_recall, "train_f1": train_f1,
+                                             "train_precision": train_precision, "train_recall": train_recall, "train_f1": train_f1, 
+                                             "train_tp": tp, "train_fp": fp, "train_fn": fn, "train_tn": tn,
                                              'validation_loss': validation_loss_epoch, 'validation_accuracy': validation_epoch_acc, 
                                              "validation_precision": validation_precision, "validation_recall": validation_recall, "validation_f1": validation_f1, 
+                                             "validation_tp": validation_tp, "validation_fp": validation_fp, "validation": validation_fn, "validation_tn": validation_tn,
                                              "learning_rate": self.__scheduler.get_last_lr()[0]}
             
             self.__train_preds[epoch+1] = {"image_id": self.__train_image_ids, "score": self.__train_scores, "pred": self.__train_outputs, "label": self.__train_labels}
