@@ -373,7 +373,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                 criterion.load_state_dict(checkpoint["criterion_state_dict"])
                 break
 
-        elif self.model_name == "JointFusion_CNN_Losses_NoReshape":
+        elif "NoReshape" in self.model_name:
             for step, batch in enumerate(dataloader):
                 batch_size = len(batch[0][0])
                 bert_batch = batch[0][0].to(self.__device)
