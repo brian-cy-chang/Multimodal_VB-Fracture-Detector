@@ -488,7 +488,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                 
             train_loss_epoch = self.__running_loss / len(self.__train_loader)
 
-            train_acc = accuracy_score(self.__train_labels, self.__train_outputs)*100
+            train_epoch_acc = accuracy_score(self.__train_labels, self.__train_outputs)*100
             train_precision = precision_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
             train_recall = recall_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
             train_f1 = f1_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
@@ -529,7 +529,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
             self.__scheduler.step(validation_loss_epoch)
 
             # safe each epoch training metrics
-            self.__train_metrics[epoch+1] = {'train_loss': train_loss_epoch, 'train_accuracy': train_acc, 
+            self.__train_metrics[epoch+1] = {'train_loss': train_loss_epoch, 'train_accuracy': train_epoch_acc, 
                                              "train_precision": train_precision, "train_recall": train_recall, "train_f1": train_f1,
                                              'validation_loss': validation_loss_epoch, 'validation_accuracy': validation_epoch_acc, 
                                              "validation_precision": validation_precision, "validation_recall": validation_recall, "validation_f1": validation_f1, 
@@ -548,7 +548,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                 self.save_best_model(self.__model, self.__optimizer, self.__criterion, epoch, validation_loss_epoch)
                 self.__best_val_loss_epoch = epoch
 
-                print(f"Epoch: {epoch+1} | Train Loss: {train_loss_epoch:.5f}, Train Accuracy: {train_acc:.3f}% | Validation loss: {validation_loss_epoch:.5f}, Validation Accuracy: {validation_epoch_acc:.3f}%")
+                print(f"Epoch: {epoch+1} | Train Loss: {train_loss_epoch:.5f}, Train Accuracy: {train_epoch_acc:.3f}% | Validation loss: {validation_loss_epoch:.5f}, Validation Accuracy: {validation_epoch_acc:.3f}%")
                 print(f"Training | Precision: {train_precision:.3f}%, Recall: {train_recall:.3f}%, F1 Score: {train_f1:.3f}%")
                 print(f"Validation | Precision: {validation_precision:.3f}%, Recall: {validation_recall:.3f}%, F1 Score: {validation_f1:.3f}%")
                 print("\n")
@@ -655,7 +655,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                 
             train_loss_epoch = self.__running_loss / len(self.__train_loader)
 
-            train_acc = accuracy_score(self.__train_labels, self.__train_outputs)*100
+            train_epoch_acc = accuracy_score(self.__train_labels, self.__train_outputs)*100
             train_precision = precision_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
             train_recall = recall_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
             train_f1 = f1_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
@@ -703,7 +703,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
             self.__scheduler.step(validation_loss_epoch)
 
             # safe each epoch training metrics
-            self.__train_metrics[epoch+1] = {'train_loss': train_loss_epoch, 'train_accuracy': train_acc, 
+            self.__train_metrics[epoch+1] = {'train_loss': train_loss_epoch, 'train_accuracy': train_epoch_acc, 
                                              "train_precision": train_precision, "train_recall": train_recall, "train_f1": train_f1,
                                              'validation_loss': validation_loss_epoch, 'validation_accuracy': validation_epoch_acc, 
                                              "validation_precision": validation_precision, "validation_recall": validation_recall, "validation_f1": validation_f1, 
@@ -722,7 +722,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                 self.save_best_model(self.__model, self.__optimizer, self.__criterion, epoch, validation_loss_epoch)
                 self.__best_val_loss_epoch = epoch
 
-                print(f"Epoch: {epoch+1} | Train Loss: {train_loss_epoch:.5f}, Train Accuracy: {train_acc:.3f}% | Validation loss: {validation_loss_epoch:.5f}, Validation Accuracy: {validation_epoch_acc:.3f}%")
+                print(f"Epoch: {epoch+1} | Train Loss: {train_loss_epoch:.5f}, Train Accuracy: {train_epoch_acc:.3f}% | Validation loss: {validation_loss_epoch:.5f}, Validation Accuracy: {validation_epoch_acc:.3f}%")
                 print(f"Training | Precision: {train_precision:.3f}%, Recall: {train_recall:.3f}%, F1 Score: {train_f1:.3f}%")
                 print(f"Validation | Precision: {validation_precision:.3f}%, Recall: {validation_recall:.3f}%, F1 Score: {validation_f1:.3f}%")
                 print("\n")
