@@ -499,24 +499,24 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
             with torch.no_grad():
                 for step, batch in enumerate(self.__validation_loader):
                     batch_size = len(batch[0][0])
-                    bert_batch = batch[0][0].to(self.__device)
-                    vb_batch = batch[0][1].to(self.__device)
-                    pt_dem_batch = batch[0][2].to(self.__device)
-                    label_batch = batch[0][3].to(self.__device)
-                    image_id = batch[1]
+                    validation_bert_batch = batch[0][0].to(self.__device)
+                    validation_vb_batch = batch[0][1].to(self.__device)
+                    validation_pt_dem_batch = batch[0][2].to(self.__device)
+                    validation_label_batch = batch[0][3].to(self.__device)
+                    validation_image_id = batch[1]
 
                     # 1. Forward pass
-                    validation_pred = self.__model(bert_batch, vb_batch, pt_dem_batch)
+                    validation_pred = self.__model(validation_bert_batch, validation_vb_batch, validation_pt_dem_batch)
                     validation_out = (validation_pred>self.threshold).float()
 
                     self.__validation_scores.append(validation_pred.detach().cpu().numpy().astype(float)[0])
                     self.__validation_outputs.append(validation_out.cpu().numpy().astype(int)[0])
-                    self.__validation_labels.append(label_batch.cpu().numpy().astype(int)[0])
-                    self.__validation_image_ids.append(image_id[0])
+                    self.__validation_labels.append(validation_label_batch.cpu().numpy().astype(int)[0])
+                    self.__validation_image_ids.append(validation_image_id[0])
 
                     # 2. Caculate loss/accuracy
-                    validation_loss = self.__criterion(validation_pred, label_batch)     
-                    self.__validation_running_loss += validation_loss.item()*label_batch.size(0)
+                    validation_loss = self.__criterion(validation_pred, validation_label_batch)     
+                    self.__validation_running_loss += validation_loss.item()*validation_label_batch.size(0)
 
                 validation_loss_epoch = self.__validation_running_loss / len(self.__validation_loader)
 
@@ -666,31 +666,31 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
             with torch.no_grad():
                 for step, batch in enumerate(self.__validation_loader):
                     batch_size = len(batch[0][0])
-                    bert_batch = batch[0][0].to(self.__device)
-                    vb_batch = batch[0][1].to(self.__device)
-                    pt_dem_batch = batch[0][2].to(self.__device)
-                    label_batch = batch[0][3].to(self.__device)
-                    image_id = batch[1]
+                    validation_bert_batch = batch[0][0].to(self.__device)
+                    validation_vb_batch = batch[0][1].to(self.__device)
+                    validation_pt_dem_batch = batch[0][2].to(self.__device)
+                    validation_label_batch = batch[0][3].to(self.__device)
+                    validation_image_id = batch[1]
 
                     # 1. Forward pass
-                    validation_pred, validation_out1, validation_out2, validation_out3 = self.__model(bert_batch, vb_batch, pt_dem_batch)
+                    validation_pred, validation_out1, validation_out2, validation_out3 = self.__model(validation_bert_batch, validation_vb_batch, validation_pt_dem_batch)
                     validation_out = (validation_pred>self.threshold).float()
 
                     self.__validation_scores.append(validation_pred.detach().cpu().numpy().astype(float)[0])
                     self.__validation_outputs.append(validation_out.cpu().numpy().astype(int)[0])
-                    self.__validation_labels.append(label_batch.cpu().numpy().astype(int)[0])
-                    self.__validation_image_ids.append(image_id[0])
+                    self.__validation_labels.append(validation_label_batch.cpu().numpy().astype(int)[0])
+                    self.__validation_image_ids.append(validation_image_id[0])
 
                     # 2. Caculate loss/accuracy
                     # Calculate individual losses
-                    validation_loss1 = self.__criterion(validation_out1, label_batch)
-                    validation_loss2 = self.__criterion(validation_out2, label_batch)
-                    validation_loss3 = self.__criterion(validation_out3, label_batch)
-                    validation_loss_output = self.__criterion(validation_pred, label_batch)
+                    validation_loss1 = self.__criterion(validation_out1, validation_label_batch)
+                    validation_loss2 = self.__criterion(validation_out2, validation_label_batch)
+                    validation_loss3 = self.__criterion(validation_out3, validation_label_batch)
+                    validation_loss_output = self.__criterion(validation_pred, validation_label_batch)
 
                     # Combine losses
                     validation_loss = validation_loss1 + validation_loss2 + validation_loss3 + validation_loss_output
-                    self.__validation_running_loss += validation_loss.item()*label_batch.size(0)
+                    self.__validation_running_loss += validation_loss.item()*validation_label_batch.size(0)
 
                 validation_loss_epoch = self.__validation_running_loss / len(self.__validation_loader)
 
