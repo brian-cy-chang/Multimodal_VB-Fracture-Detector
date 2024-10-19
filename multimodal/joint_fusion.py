@@ -626,11 +626,12 @@ class JointFusion_CNN_NoReshape_Permute(nn.Module):
     """
     Joint fusion model with CNN that treats
         BERT-based model output as an "image"
+        and convolutional layer slides over
+        the sequence length
     """
     def __init__(self, batch_size, bert_dim, vb_dim, pt_dem_dim, hidden_size, dropout_rate=0.5):
-        super(JointFusion_CNN_NoReshape, self).__init__()
+        super(JointFusion_CNN_NoReshape_Permute, self).__init__()
         self.batch_size = batch_size
-        self.bert_dim = bert_dim
         self.vb_dim = vb_dim
         self.pt_dem_dim = pt_dem_dim
         self.hidden_size = hidden_size
@@ -640,6 +641,13 @@ class JointFusion_CNN_NoReshape_Permute(nn.Module):
         self.channel_3 = int(self.channel_2/2)
         self.channel_4 = int(self.channel_3/2)
         self.resize_shape = int(hidden_size/self.channel_1)
+        if Config.getstr("bert", "bert_mode") == "discrete":
+            if Config.getstr("preprocess", "encode_mode") == "label":
+                self.bert_dim = 6
+            elif Config.getstr("preprocess", "encode_mode") == "onehot":
+                self.bert_dim = 6
+        elif Config.getstr("bert", "bert_mode") == "cls":
+            self.bert_dim = 768
         
         # Define sub-networks for each modality
         self.bert_onehot = nn.Sequential(
@@ -699,14 +707,14 @@ class JointFusion_CNN_NoReshape_Permute(nn.Module):
         )
 
         self.bert_cls = nn.Sequential(
-            nn.Conv1d(in_channels=self.bert_dim, out_channels=128, padding=0, kernel_size=3),
-            nn.BatchNorm1d(128),
+            nn.Conv1d(in_channels=self.bert_dim, out_channels=256, padding=0, kernel_size=3),
+            nn.BatchNorm1d(256),
             nn.MaxPool1d(kernel_size=4, padding=1),
-            nn.Conv1d(in_channels=128, out_channels=64, padding=0, kernel_size=3),
+            nn.Conv1d(in_channels=256, out_channels=128, padding=0, kernel_size=3),
             nn.BatchNorm1d(64),
             nn.MaxPool1d(kernel_size=4),
-            nn.Conv1d(in_channels=64, out_channels=32, padding=0, kernel_size=3),
-            nn.BatchNorm1d(32),
+            nn.Conv1d(in_channels=128, out_channels=64, padding=0, kernel_size=3),
+            nn.BatchNorm1d(64),
             nn.MaxPool1d(kernel_size=4),
             nn.Flatten(),
             nn.Linear(352, self.hidden_size),
@@ -766,7 +774,10 @@ class JointFusion_CNN_NoReshape_Permute(nn.Module):
                 x1 = x1.permute(0, 2, 1)        
                 out1 = self.bert_onehot(x1)
         elif Config.getstr("bert", "bert_mode") == "cls":
+            # Permute tensor to match Conv1d input requirements (batch_size, in_channels, seq_length)
+            x1 = x1.permute(0, 2, 1)    
             out1 = self.bert_cls(x1)
+
         out2 = self.vb(x2)
         out3 = self.pt_dem(x3)
 
@@ -1150,6 +1161,7 @@ class JointFusion_CNN_Losses_NoReshape(nn.Module):
         out3 = self.pt_dem(x3)
 
         out1 = out1.squeeze(dim=1)
+        out2 = out2.squeeze(dim=1)
         out3 = out3.squeeze(dim=1)
         
         # Concatenate features
@@ -1279,7 +1291,7 @@ class JointFusion_Transformer(nn.Module):
 
         # Transformer for x1
         self.transformer = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=self.hidden_size, nhead=32, dim_feedforward=512, 
+            nn.TransformerEncoderLayer(d_model=self.hidden_size, nhead=32,
                                        batch_first=False, 
                                        norm_first=True), 
             num_layers=8,
@@ -1306,7 +1318,7 @@ class JointFusion_Transformer(nn.Module):
             x1 = self.transformer(x1, src_key_padding_mask=extended_attention_mask)
 
             # Apply batch normalization
-            # x1 = self.bn(x1.transpose(1, 2)).transpose(1, 2)
+            x1 = self.bn(x1.transpose(1, 2)).transpose(1, 2)
 
             # Pooling
             x1 = x1.mean(dim=0)
