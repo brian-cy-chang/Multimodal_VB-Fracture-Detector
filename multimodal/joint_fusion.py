@@ -74,40 +74,51 @@ class JointFusion_FC(nn.Module):
             nn.LeakyReLU(),
         )
 
-        self.vb = nn.Sequential(
-            nn.Linear(self.vb_dim, self.channel_2),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_2, self.channel_3),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_3, self.channel_4),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_4, self.batch_size),
-            nn.LeakyReLU(),
-            # nn.Dropout(),
-        )
+        # self.vb = nn.Sequential(
+        #     nn.Linear(self.vb_dim, self.channel_2),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_2, self.channel_3),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_3, self.channel_4),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_4, self.batch_size),
+        #     nn.LeakyReLU(),
+        #     # nn.Dropout(),
+        # )
 
-        self.pt_dem = nn.Sequential(
-            nn.Linear(self.pt_dem_dim, self.channel_1),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_1, self.channel_2),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_2, self.channel_3),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_3, self.channel_4),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_4, self.batch_size),
-            # nn.LeakyReLU(),
-            # nn.Dropout(),
-        )
+        # self.pt_dem = nn.Sequential(
+        #     nn.Linear(self.pt_dem_dim, self.hidden_size),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.hidden_size, self.channel_1),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_1, self.channel_2),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_2, self.channel_3),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_3, self.channel_4),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_4, self.batch_size),
+        #     # nn.LeakyReLU(),
+        #     # nn.Dropout(),
+        # )
         
-        self.classifier = nn.Linear(self.batch_size*3, self.batch_size)
+        # self.classifier = nn.Linear(self.batch_size*3, self.batch_size)
+        self.vb = nn.Linear(self.vb_dim, 8)
+        self.pt_dem = nn.Linear(self.pt_dem_dim, 16)
+        
+        bert_size = self.batch_size
+        vb_size = 8
+        pt_dem_size = 16
+        
+        self.classifier = nn.Linear(bert_size + vb_size + pt_dem_size, self.batch_size)
 
     def forward(self, x1, x2, x3):
         x1 = self.bert(x1)
@@ -168,50 +179,56 @@ class JointFusion_FC_Attention_BeforeConcatenation(nn.Module):
             # nn.Dropout(),
         )
 
-        self.vb = nn.Sequential(
-            nn.Linear(self.vb_dim, self.channel_2),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_2, self.channel_3),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_3, self.channel_4),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_4, self.batch_size),
-            nn.LeakyReLU(),
-            # nn.Dropout(),
-        )
+        # self.vb = nn.Sequential(
+        #     nn.Linear(self.vb_dim, self.channel_2),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_2, self.channel_3),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_3, self.channel_4),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_4, self.batch_size),
+        #     nn.LeakyReLU(),
+        #     # nn.Dropout(),
+        # )
 
-        self.pt_dem = nn.Sequential(
-            nn.Linear(self.pt_dem_dim, self.channel_1),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_1, self.channel_2),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_2, self.channel_3),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_3, self.channel_4),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_4, self.batch_size),
-            # nn.LeakyReLU(),
-            # nn.Dropout(),
-        )
+        # self.pt_dem = nn.Sequential(
+        #     nn.Linear(self.pt_dem_dim, self.hidden_size),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(hidden_size, self.channel_1),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_1, self.channel_2),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_2, self.channel_3),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_3, self.channel_4),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_4, self.batch_size),
+        #     nn.LeakyReLU(),
+        #     # nn.Dropout(),
+        # )
 
+        self.vb = nn.Linear(self.vb_dim, 8)
+        self.pt_dem = nn.Linear(self.pt_dem_dim, 16)
+        
         bert_size = self.batch_size
-        vb_size = self.batch_size
-        pt_dem_size = self.batch_size
-
+        vb_size = 8
+        pt_dem_size = 16
+    
         self.attention_bert = Attention(bert_size, self.hidden_size)
         self.attention_vb = Attention(vb_size, self.hidden_size)
         self.attention_pt_dem = Attention(pt_dem_size, self.hidden_size)
 
         self.attention = Attention(bert_size+vb_size+pt_dem_size, self.hidden_size)
-        
-        self.classifier = nn.Linear(self.batch_size*3, self.batch_size)
+        self.classifier = nn.Linear(bert_size + vb_size + pt_dem_size, self.batch_size)
+        # self.classifier = nn.Linear(self.batch_size*3, self.batch_size)
 
     def forward(self, x1, x2, x3):
         x1 = self.bert(x1)
@@ -281,50 +298,55 @@ class JointFusion_FC_Attention_AfterConcatenation(nn.Module):
             # nn.Dropout(),
         )
 
-        self.vb = nn.Sequential(
-            nn.Linear(self.vb_dim, self.channel_2),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_2, self.channel_3),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_3, self.channel_4),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_4, self.batch_size),
-            nn.LeakyReLU(),
-            # nn.Dropout(),
-        )
+        # self.vb = nn.Sequential(
+        #     nn.Linear(self.vb_dim, self.channel_2),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_2, self.channel_3),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_3, self.channel_4),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_4, self.batch_size),
+        #     nn.LeakyReLU(),
+        #     # nn.Dropout(),
+        # )
 
-        self.pt_dem = nn.Sequential(
-            nn.Linear(self.pt_dem_dim, self.channel_1),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_1, self.channel_2),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_2, self.channel_3),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_3, self.channel_4),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_4, self.batch_size),
-            # nn.LeakyReLU(),
-            # nn.Dropout(),
-        )
+        # self.pt_dem = nn.Sequential(
+        #     nn.Linear(self.pt_dem_dim, self.hidden_size),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(hidden_size, self.channel_1),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_1, self.channel_2),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_2, self.channel_3),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_3, self.channel_4),
+        #     nn.LeakyReLU(),
+        #     nn.Dropout(p=self.dropout_rate),
+        #     nn.Linear(self.channel_4, self.batch_size),
+        #     nn.LeakyReLU(),
+        #     # nn.Dropout(),
+        # )
 
+        # bert_size = self.batch_size
+        # vb_size = self.batch_size
+        # pt_dem_size = self.batch_size
+        self.vb = nn.Linear(self.vb_dim, 8)
+        self.pt_dem = nn.Linear(self.pt_dem_dim, 16)
+        
         bert_size = self.batch_size
-        vb_size = self.batch_size
-        pt_dem_size = self.batch_size
-
-        self.attention_bert = Attention(bert_size, self.hidden_size)
-        self.attention_vb = Attention(vb_size, self.hidden_size)
-        self.attention_pt_dem = Attention(pt_dem_size, self.hidden_size)
+        vb_size = 8
+        pt_dem_size = 16
 
         self.attention = Attention(bert_size+vb_size+pt_dem_size, self.hidden_size)
-        
-        self.classifier = nn.Linear(self.batch_size*3, self.batch_size)
+        self.classifier = nn.Linear(bert_size + vb_size + pt_dem_size, self.batch_size)
+        # self.classifier = nn.Linear(self.batch_size*3, self.batch_size)
 
     def forward(self, x1, x2, x3):
         x1 = self.bert(x1)
@@ -416,7 +438,10 @@ class JointFusion_CNN(nn.Module):
         )
 
         self.pt_dem = nn.Sequential(
-            nn.Linear(self.pt_dem_dim, self.channel_1),
+            nn.Linear(self.pt_dem_dim, self.hidden_size),
+            nn.LeakyReLU(),
+            nn.Dropout(p=self.dropout_rate),
+            nn.Linear(self.hidden_size, self.channel_1),
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
             nn.Linear(self.channel_1, self.channel_2),
@@ -425,12 +450,8 @@ class JointFusion_CNN(nn.Module):
             nn.Linear(self.channel_2, self.channel_3),
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_3, self.channel_4),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_4, self.batch_size),
+            nn.Linear(self.channel_3, self.batch_size),
             # nn.LeakyReLU(),
-            # nn.Dropout(),
         )
         
         bert_size = 4*self.channel_4
@@ -581,21 +602,11 @@ class JointFusion_CNN_NoReshape(nn.Module):
         )
         
         self.pt_dem = nn.Sequential(
-            nn.Linear(self.pt_dem_dim, self.channel_1),
+            nn.Linear(self.pt_dem_dim, self.hidden_size),
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_1, self.channel_2),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_2, self.channel_3),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_3, self.channel_4),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_4, self.batch_size),
+            nn.Linear(self.hidden_size, self.batch_size),
             # nn.LeakyReLU(),
-            # nn.Dropout(),
         )
         
         # Combine features from all modalities
@@ -755,21 +766,11 @@ class JointFusion_CNN_NoReshape_Permute(nn.Module):
         )
         
         self.pt_dem = nn.Sequential(
-            nn.Linear(self.pt_dem_dim, self.channel_1),
+            nn.Linear(self.pt_dem_dim, self.hidden_size),
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_1, self.channel_2),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_2, self.channel_3),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_3, self.channel_4),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_4, self.batch_size),
+            nn.Linear(self.hidden_size, self.batch_size),
             # nn.LeakyReLU(),
-            # nn.Dropout(),
         )
         
         # Combine features from all modalities
@@ -862,7 +863,10 @@ class JointFusion_CNN_Attention_AfterConcatenation(nn.Module):
         )
 
         self.pt_dem = nn.Sequential(
-            nn.Linear(self.pt_dem_dim, self.channel_1),
+            nn.Linear(self.pt_dem_dim, self.hidden_size),
+            nn.LeakyReLU(),
+            nn.Dropout(p=self.dropout_rate),
+            nn.Linear(self.hidden_size, self.channel_1),
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
             nn.Linear(self.channel_1, self.channel_2),
@@ -871,10 +875,7 @@ class JointFusion_CNN_Attention_AfterConcatenation(nn.Module):
             nn.Linear(self.channel_2, self.channel_3),
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_3, self.channel_4),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_4, self.batch_size),
+            nn.Linear(self.channel_3, self.batch_size),
             # nn.LeakyReLU(),
             # nn.Dropout(),
         )
@@ -967,10 +968,10 @@ class JointFusion_CNN_Attention_BeforeConcatenation(nn.Module):
         )
 
         self.pt_dem = nn.Sequential(
-            # nn.Linear(self.pt_dem_dim, self.hidden_size),
-            # nn.LeakyReLU(),
-            # nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.pt_dem_dim, self.channel_1),
+            nn.Linear(self.pt_dem_dim, self.hidden_size),
+            nn.LeakyReLU(),
+            nn.Dropout(p=self.dropout_rate),
+            nn.Linear(self.hidden_size, self.channel_1),
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
             nn.Linear(self.channel_1, self.channel_2),
@@ -1152,7 +1153,10 @@ class JointFusion_CNN_Losses_NoReshape(nn.Module):
         )
         
         self.pt_dem = nn.Sequential(
-            nn.Linear(self.pt_dem_dim, self.channel_1),
+            nn.Linear(self.pt_dem_dim, self.hidden_size),
+            nn.LeakyReLU(),
+            nn.Dropout(p=self.dropout_rate),
+            nn.Linear(self.hidden_size, self.channel_1),
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
             nn.Linear(self.channel_1, self.channel_2),
@@ -1258,21 +1262,11 @@ class JointFusion_CNN_Losses_Reshape(nn.Module):
         )
         
         self.pt_dem = nn.Sequential(
-            nn.Linear(self.pt_dem_dim, self.channel_1),
+            nn.Linear(self.pt_dem_dim, self.hidden_size),
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_1, self.channel_2),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_2, self.channel_3),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_3, self.channel_4),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_4, self.batch_size),
+            nn.Linear(self.hidden_size, self.batch_size),
             # nn.LeakyReLU(),
-            # nn.Dropout(p=self.dropout_rate),
         )
         
         self.combine = nn.Linear(self.batch_size*3, self.batch_size)
@@ -1331,11 +1325,11 @@ class JointFusion_Transformer(nn.Module):
         self.bn = nn.BatchNorm1d(self.hidden_size)
 
         # Fully connected layers for x2 and x3
-        self.fc_vb = nn.Linear(self.vb_dim, 64)
-        self.fc_pt_dem = nn.Linear(self.pt_dem_dim, 64)
+        self.fc_vb = nn.Linear(self.vb_dim, 32)
+        self.fc_pt_dem = nn.Linear(self.pt_dem_dim, 32)
 
         # Final classification layer
-        self.classifier = nn.Linear(self.hidden_size+64+64, self.batch_size)
+        self.classifier = nn.Linear(self.hidden_size+32+32, self.batch_size)
 
     def forward(self, x1, x2, x3):      
         # Project x1 to the required embedding dimension
