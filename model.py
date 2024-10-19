@@ -408,7 +408,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
     def train_model(self):
         """
         Run training for N epochs and save the best model based on 
-            validation F1 score to output_path + fine_tuned_path
+            validation loss to output_path
 
         Returns
         -------
@@ -581,6 +581,9 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
         self.save_predictions(self.__validation_df, save_name=f"validation_epoch{self.__best_val_loss_epoch+1}")
             
     def train_model_losses(self):
+        """
+        Training for models that output individual predictions for loss backpropagation
+        """
         # Instantiate the model
         if "Losses" in self.model_name:
             if not self.use_fine_tuned:
@@ -896,6 +899,14 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
         print(f"Predictions saved to {self.results_path}")
                 
     def save_predictions(self, preds_df, save_name=None):
+        """
+        Save predictions to a csv file
+
+        Parameters
+        ----------
+        preds_df (Pandas DataFrame)
+        save_name (str)
+        """
         if save_name:
             preds_df.to_csv(os.path.join(self.results_path, f"{self.save_name}_"+f"{save_name}_"+datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')+f"_predictions.csv"), index=False)
         else:    
