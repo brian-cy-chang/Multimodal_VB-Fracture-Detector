@@ -67,49 +67,8 @@ class JointFusion_FC(nn.Module):
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
             nn.Linear(self.channel_3, self.channel_4),
-            # nn.LeakyReLU(),
-            # nn.Dropout(p=self.dropout_rate),
-            # nn.Linear(self.channel_4, self.batch_size), 
-            # nn.LeakyReLU(),
         )
 
-        # self.vb = nn.Sequential(
-        #     nn.Linear(self.vb_dim, self.channel_2),
-        #     nn.LeakyReLU(),
-        #     nn.Dropout(p=self.dropout_rate),
-        #     nn.Linear(self.channel_2, self.channel_3),
-        #     nn.LeakyReLU(),
-        #     nn.Dropout(p=self.dropout_rate),
-        #     nn.Linear(self.channel_3, self.channel_4),
-        #     nn.LeakyReLU(),
-        #     nn.Dropout(p=self.dropout_rate),
-        #     nn.Linear(self.channel_4, self.batch_size),
-        #     nn.LeakyReLU(),
-        #     # nn.Dropout(),
-        # )
-
-        # self.pt_dem = nn.Sequential(
-        #     nn.Linear(self.pt_dem_dim, self.hidden_size),
-        #     nn.LeakyReLU(),
-        #     nn.Dropout(p=self.dropout_rate),
-        #     nn.Linear(self.hidden_size, self.channel_1),
-        #     nn.LeakyReLU(),
-        #     nn.Dropout(p=self.dropout_rate),
-        #     nn.Linear(self.channel_1, self.channel_2),
-        #     nn.LeakyReLU(),
-        #     nn.Dropout(p=self.dropout_rate),
-        #     nn.Linear(self.channel_2, self.channel_3),
-        #     nn.LeakyReLU(),
-        #     nn.Dropout(p=self.dropout_rate),
-        #     nn.Linear(self.channel_3, self.channel_4),
-        #     nn.LeakyReLU(),
-        #     nn.Dropout(p=self.dropout_rate),
-        #     nn.Linear(self.channel_4, self.batch_size),
-        #     # nn.LeakyReLU(),
-        #     # nn.Dropout(),
-        # )
-        
-        # self.classifier = nn.Linear(self.batch_size*3, self.batch_size)
         self.vb = nn.Linear(self.vb_dim, 8)
         self.pt_dem = nn.Linear(self.pt_dem_dim, 16)
         
@@ -124,17 +83,17 @@ class JointFusion_FC(nn.Module):
         x2 = self.vb(x2)
         x3 = self.pt_dem(x3)
 
-        x1 = torch.flatten(x1)
-        x2 = torch.flatten(x2)
-        x3 = torch.flatten(x3)
+        out1 = torch.flatten(x1)
+        out2 = torch.flatten(x2)
+        out3 = torch.flatten(x3)
 
-        x = torch.cat((x1, x2, x3))
-        x = self.classifier(x)
+        out = torch.cat((out1, out2, out3))
+        out = self.classifier(out)
 
         # Apply sigmoid function
-        x = torch.sigmoid(x)
+        out = torch.sigmoid(out)
 
-        return x
+        return out
     
 class JointFusion_FC_Losses(nn.Module):
     """
@@ -291,7 +250,6 @@ class JointFusion_FC_Attention_BeforeConcatenation(nn.Module):
 
         self.attention = Attention(bert_size+vb_size+pt_dem_size, self.hidden_size)
         self.classifier = nn.Linear(bert_size + vb_size + pt_dem_size, self.batch_size)
-        # self.classifier = nn.Linear(self.batch_size*3, self.batch_size)
 
     def forward(self, x1, x2, x3):
         x1 = self.bert(x1)
@@ -307,18 +265,18 @@ class JointFusion_FC_Attention_BeforeConcatenation(nn.Module):
         attn_weights_vb = self.attention_vb(x2)
         attn_weights_pt_dem = self.attention_pt_dem(x3)
 
-        x1 = x1*attn_weights_bert
-        x2 = x2*attn_weights_vb
-        x3 = x3*attn_weights_pt_dem
+        out1 = x1*attn_weights_bert
+        out2 = x2*attn_weights_vb
+        out3 = x3*attn_weights_pt_dem
 
-        x = torch.cat((x1, x2, x3), dim=1)
-        x = x.squeeze()
-        x = self.classifier(x)
+        out = torch.cat((out1, out2, out3), dim=1)
+        out = out.squeeze()
+        out = self.classifier(out)
 
         # Apply sigmoid function
-        x = torch.sigmoid(x)
+        out = torch.sigmoid(out)
 
-        return x
+        return out
     
 class JointFusion_FC_Attention_AfterConcatenation(nn.Module):
     """
@@ -374,7 +332,6 @@ class JointFusion_FC_Attention_AfterConcatenation(nn.Module):
 
         self.attention = Attention(bert_size+vb_size+pt_dem_size, self.hidden_size)
         self.classifier = nn.Linear(bert_size + vb_size + pt_dem_size, self.batch_size)
-        # self.classifier = nn.Linear(self.batch_size*3, self.batch_size)
 
     def forward(self, x1, x2, x3):
         x1 = self.bert(x1)
@@ -386,17 +343,17 @@ class JointFusion_FC_Attention_AfterConcatenation(nn.Module):
         x3 = torch.flatten(x3)
 
         # Ensure tensors have the same batch size dimension
-        x = torch.cat((x1, x2, x3))
+        out = torch.cat((x1, x2, x3))
 
-        attn_weights = self.attention(x)
-        x = x*attn_weights
-        x = x.squeeze()
-        x = self.classifier(x)
+        attn_weights = self.attention(out)
+        out = out*attn_weights
+        out = out.squeeze()
+        out = self.classifier(out)
 
         # Apply sigmoid function
-        x = torch.sigmoid(x)
+        out = torch.sigmoid(out)
 
-        return x
+        return out
 
 class JointFusion_CNN(nn.Module):
     """
@@ -489,13 +446,13 @@ class JointFusion_CNN(nn.Module):
         x2 = torch.flatten(x2)
         x3 = torch.flatten(x3)
 
-        x = torch.cat((x1, x2, x3))
-        x = self.classifier(x)
+        out = torch.cat((x1, x2, x3))
+        out = self.classifier(out)
 
         # Apply sigmoid function
-        x = torch.sigmoid(x)
+        out = torch.sigmoid(out)
 
-        return x
+        return out
     
 class JointFusion_CNN_NoReshape(nn.Module):
     """
@@ -538,11 +495,6 @@ class JointFusion_CNN_NoReshape(nn.Module):
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
             nn.Linear(self.channel_3, self.channel_4),
-            # nn.LeakyReLU(),
-            # nn.Dropout(p=self.dropout_rate),
-            # nn.Linear(self.channel_4, self.batch_size),
-            # nn.LeakyReLU(),
-            # nn.Dropout()
         )
 
         self.bert_label = nn.Sequential(
@@ -566,11 +518,6 @@ class JointFusion_CNN_NoReshape(nn.Module):
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
             nn.Linear(self.channel_3, self.channel_4),
-            # nn.LeakyReLU(),
-            # nn.Dropout(p=self.dropout_rate),
-            # nn.Linear(self.channel_4, self.batch_size),
-            # nn.LeakyReLU(),
-            # nn.Dropout()
         )
 
         self.bert_cls = nn.Sequential(
@@ -597,11 +544,6 @@ class JointFusion_CNN_NoReshape(nn.Module):
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
             nn.Linear(self.channel_3, self.channel_4),
-            # nn.LeakyReLU(),
-            # nn.Dropout(p=self.dropout_rate),
-            # nn.Linear(self.channel_4, self.batch_size),
-            # nn.LeakyReLU(),
-            # nn.Dropout()
         )
         
         self.vb = nn.Sequential(
@@ -612,11 +554,6 @@ class JointFusion_CNN_NoReshape(nn.Module):
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
             nn.Linear(self.channel_3, self.channel_4),
-            # nn.LeakyReLU(),
-            # nn.Dropout(p=self.dropout_rate),
-            # nn.Linear(self.channel_4, self.batch_size),
-            # nn.LeakyReLU(),
-            # nn.Dropout(),
         )
         
         self.pt_dem = nn.Sequential(
@@ -630,17 +567,14 @@ class JointFusion_CNN_NoReshape(nn.Module):
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
             nn.Linear(self.channel_3, self.channel_4),
-            # nn.LeakyReLU(),
         )
 
         bert_size = self.channel_4
         vb_size = self.channel_4
         pt_dem_size = self.channel_4
         
-        self.classifier = nn.Linear(bert_size+vb_size+pt_dem_size, self.batch_size)
-        
         # Combine features from all modalities
-        # self.classifier = nn.Linear(self.batch_size*3, self.batch_size)
+        self.classifier = nn.Linear(bert_size+vb_size+pt_dem_size, self.batch_size)
     
     def forward(self, x1, x2, x3):
         if Config.getstr("bert", "bert_mode") == "discrete":
@@ -659,183 +593,12 @@ class JointFusion_CNN_NoReshape(nn.Module):
 
         # Concatenate features
         combined_features = torch.cat((out1, out2, out3))
-        output = self.classifier(combined_features)
-
-        output = torch.sigmoid(output)
-        
-        return output
-
-class JointFusion_CNN_NoReshape_Permute(nn.Module):
-    """
-    Joint fusion model with CNN that treats
-        BERT-based model output as an "image"
-        and convolutional layer slides over
-        the sequence length
-    """
-    def __init__(self, batch_size, bert_dim, vb_dim, pt_dem_dim, hidden_size, dropout_rate=0.5):
-        super(JointFusion_CNN_NoReshape_Permute, self).__init__()
-        self.batch_size = batch_size
-        self.vb_dim = vb_dim
-        self.pt_dem_dim = pt_dem_dim
-        self.hidden_size = hidden_size
-        self.dropout_rate = dropout_rate
-        self.channel_1 = int(self.hidden_size/2)
-        self.channel_2 = int(self.channel_1/2)
-        self.channel_3 = int(self.channel_2/2)
-        self.channel_4 = int(self.channel_3/2)
-        self.resize_shape = int(hidden_size/self.channel_1)
-        if Config.getstr("bert", "bert_mode") == "discrete":
-            if Config.getstr("preprocess", "encode_mode") == "label":
-                self.bert_dim = 3
-            elif Config.getstr("preprocess", "encode_mode") == "onehot":
-                self.bert_dim = 15
-        elif Config.getstr("bert", "bert_mode") == "cls":
-            self.bert_dim = 768
-        
-        # Define sub-networks for each modality
-        self.bert_onehot = nn.Sequential(
-            nn.Conv1d(in_channels=self.bert_dim, out_channels=8, padding=2, kernel_size=3),
-            nn.BatchNorm1d(8),
-            nn.MaxPool1d(kernel_size=2, padding=1),
-            nn.Conv1d(in_channels=8, out_channels=4, padding=2, kernel_size=3),
-            nn.BatchNorm1d(4),
-            nn.MaxPool1d(kernel_size=2, padding=1),
-            nn.Flatten(),
-            nn.Linear(16, self.hidden_size),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.hidden_size, self.channel_1),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_1, self.channel_2),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_2, self.channel_3),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_3, self.channel_4),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_4, self.batch_size),
-            # nn.LeakyReLU(),
-            # nn.Dropout()
-        )
-
-        self.bert_label = nn.Sequential(
-            nn.Conv1d(in_channels=self.bert_dim, out_channels=8, padding=2, kernel_size=3),
-            nn.BatchNorm1d(8),
-            nn.MaxPool1d(kernel_size=2, padding=1),
-            nn.Conv1d(in_channels=8, out_channels=4, padding=2, kernel_size=3),
-            nn.BatchNorm1d(4),
-            nn.MaxPool1d(kernel_size=2, padding=1),
-            nn.Flatten(),
-            nn.Linear(12, self.hidden_size),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.hidden_size, self.channel_1),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_1, self.channel_2),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_2, self.channel_3),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_3, self.channel_4),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_4, self.batch_size),
-            # nn.LeakyReLU(),
-            # nn.Dropout()
-        )
-
-        self.bert_cls = nn.Sequential(
-            nn.Conv1d(in_channels=self.bert_dim, out_channels=256, padding=0, kernel_size=3),
-            nn.BatchNorm1d(256),
-            nn.MaxPool1d(kernel_size=4, padding=1),
-            nn.Conv1d(in_channels=256, out_channels=128, padding=0, kernel_size=3),
-            nn.BatchNorm1d(128),
-            nn.MaxPool1d(kernel_size=4),
-            nn.Conv1d(in_channels=128, out_channels=64, padding=0, kernel_size=3),
-            nn.BatchNorm1d(64),
-            nn.MaxPool1d(kernel_size=4),
-            nn.Flatten(),
-            nn.Linear(128, self.hidden_size),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.hidden_size, self.channel_1),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_1, self.channel_2),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_2, self.channel_3),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_3, self.channel_4),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_4, self.batch_size),
-            # nn.LeakyReLU(),
-            # nn.Dropout()
-        )
-        
-        self.vb = nn.Sequential(
-            nn.Linear(self.vb_dim, self.channel_2),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_2, self.channel_3),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_3, self.channel_4),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.channel_4, self.batch_size),
-            # nn.LeakyReLU(),
-            # nn.Dropout(),
-        )
-        
-        self.pt_dem = nn.Sequential(
-            nn.Linear(self.pt_dem_dim, self.hidden_size),
-            nn.LeakyReLU(),
-            nn.Dropout(p=self.dropout_rate),
-            nn.Linear(self.hidden_size, self.batch_size),
-            # nn.LeakyReLU(),
-        )
-        
-        # Combine features from all modalities
-        self.classifier = nn.Linear(self.batch_size*3, self.batch_size)
-    
-    def forward(self, x1, x2, x3):
-        if Config.getstr("bert", "bert_mode") == "discrete":
-            if Config.getstr("preprocess", "encode_mode") == "label":
-                # Permute tensor to match Conv1d input requirements (batch_size, in_channels, seq_length)
-                x1 = x1.permute(0, 2, 1)
-                out1 = self.bert_label(x1)
-            elif Config.getstr("preprocess", "encode_mode") == "onehot":
-                # Permute tensor to match Conv1d input requirements (batch_size, in_channels, seq_length)
-                x1 = x1.permute(0, 2, 1)        
-                out1 = self.bert_onehot(x1)
-        elif Config.getstr("bert", "bert_mode") == "cls":
-            # Permute tensor to match Conv1d input requirements (batch_size, in_channels, seq_length)
-            x1 = x1.permute(0, 2, 1)    
-            out1 = self.bert_cls(x1)
-
-        out2 = self.vb(x2)
-        out3 = self.pt_dem(x3)
-
-        out1 = out1.squeeze(dim=1)
-        out2 = out2.squeeze(dim=1)
-        out3 = out3.squeeze(dim=1)
-        
-        # Concatenate features
-        combined_features = torch.cat((out1, out2, out3))
         out = self.classifier(combined_features)
 
         out = torch.sigmoid(out)
         
         return out
-    
+ 
 class JointFusion_CNN_Attention_AfterConcatenation(nn.Module):
     """
     Applies attention weights to the concatenated features
@@ -917,17 +680,17 @@ class JointFusion_CNN_Attention_AfterConcatenation(nn.Module):
         x3 = torch.flatten(x3)
 
         # Ensure tensors have the same batch size dimension
-        x = torch.cat((x1, x2, x3))
+        out = torch.cat((x1, x2, x3))
         
-        attn_weights = self.attention(x)
-        x = x*attn_weights
-        x = x.squeeze()
-        x = self.classifier(x)
+        attn_weights = self.attention(out)
+        out = out*attn_weights
+        out = out.squeeze()
+        out = self.classifier(out)
 
         # Apply sigmoid function
-        x = torch.sigmoid(x)
+        out = torch.sigmoid(out)
 
-        return x
+        return out
     
 class JointFusion_CNN_Attention_BeforeConcatenation(nn.Module):
     """
@@ -1023,15 +786,15 @@ class JointFusion_CNN_Attention_BeforeConcatenation(nn.Module):
         x3 = x3 * attn_weights_pt_dem
 
         # Ensure tensors have the same batch size dimension
-        x = torch.cat((x1, x2, x3), dim=1)
+        out = torch.cat((x1, x2, x3), dim=1)
         
-        x = x.squeeze()
-        x = self.classifier(x)
+        out = out.squeeze()
+        out = self.classifier(out)
         
         # Apply sigmoid function
-        x = torch.sigmoid(x)
+        out = torch.sigmoid(out)
 
-        return x
+        return out
     
 class JointFusion_CNN_Losses_NoReshape(nn.Module):
     """
@@ -1182,14 +945,14 @@ class JointFusion_CNN_Losses_NoReshape(nn.Module):
         
         # Concatenate features
         combined_features = torch.cat((out1, out2, out3))
-        output = self.combine(combined_features)
+        out = self.combine(combined_features)
 
         out1 = torch.sigmoid(out1)
         out2 = torch.sigmoid(out2)
         out3 = torch.sigmoid(out3)
-        output = torch.sigmoid(output)
+        out = torch.sigmoid(out)
         
-        return output, out1, out2, out3
+        return out, out1, out2, out3
     
 class JointFusion_CNN_Losses_Reshape(nn.Module):
     """
@@ -1275,14 +1038,14 @@ class JointFusion_CNN_Losses_Reshape(nn.Module):
         
         # Concatenate features
         combined_features = torch.cat((out1, out2, out3))
-        output = self.combine(combined_features)
+        out = self.combine(combined_features)
 
         out1 = torch.sigmoid(out1)
         out2 = torch.sigmoid(out2)
         out3 = torch.sigmoid(out3)
-        output = torch.sigmoid(output)
+        out = torch.sigmoid(out)
         
-        return output, out1, out2, out3
+        return out, out1, out2, out3
     
 class JointFusion_Transformer(nn.Module):
     def __init__(self, batch_size, bert_dim, in_channels, vb_dim, pt_dem_dim, hidden_size, dropout_rate=0.5):
@@ -1366,10 +1129,172 @@ class JointFusion_Transformer(nn.Module):
         x3 = x3.squeeze()
 
         # Concatenate all modalities
-        x = torch.cat((x1, x2, x3))
+        out = torch.cat((x1, x2, x3))
 
         # Final classification
-        x = self.classifier(x)
-        x = torch.sigmoid(x)
+        out = self.classifier(out)
+        out = torch.sigmoid(out)
 
-        return x
+        return out
+    
+# class JointFusion_CNN_NoReshape_Permute(nn.Module):
+#     """
+#     Joint fusion model with CNN that treats
+#         BERT-based model output as an "image"
+#         and convolutional layer slides over
+#         the sequence length
+#     """
+#     def __init__(self, batch_size, bert_dim, vb_dim, pt_dem_dim, hidden_size, dropout_rate=0.5):
+#         super(JointFusion_CNN_NoReshape_Permute, self).__init__()
+#         self.batch_size = batch_size
+#         self.vb_dim = vb_dim
+#         self.pt_dem_dim = pt_dem_dim
+#         self.hidden_size = hidden_size
+#         self.dropout_rate = dropout_rate
+#         self.channel_1 = int(self.hidden_size/2)
+#         self.channel_2 = int(self.channel_1/2)
+#         self.channel_3 = int(self.channel_2/2)
+#         self.channel_4 = int(self.channel_3/2)
+#         self.resize_shape = int(hidden_size/self.channel_1)
+#         if Config.getstr("bert", "bert_mode") == "discrete":
+#             if Config.getstr("preprocess", "encode_mode") == "label":
+#                 self.bert_dim = 3
+#             elif Config.getstr("preprocess", "encode_mode") == "onehot":
+#                 self.bert_dim = 15
+#         elif Config.getstr("bert", "bert_mode") == "cls":
+#             self.bert_dim = 768
+        
+#         # Define sub-networks for each modality
+#         self.bert_onehot = nn.Sequential(
+#             nn.Conv1d(in_channels=self.bert_dim, out_channels=8, padding=2, kernel_size=3),
+#             nn.BatchNorm1d(8),
+#             nn.MaxPool1d(kernel_size=2, padding=1),
+#             nn.Conv1d(in_channels=8, out_channels=4, padding=2, kernel_size=3),
+#             nn.BatchNorm1d(4),
+#             nn.MaxPool1d(kernel_size=2, padding=1),
+#             nn.Flatten(),
+#             nn.Linear(16, self.hidden_size),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.hidden_size, self.channel_1),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.channel_1, self.channel_2),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.channel_2, self.channel_3),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.channel_3, self.channel_4),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.channel_4, self.batch_size),
+#         )
+
+#         self.bert_label = nn.Sequential(
+#             nn.Conv1d(in_channels=self.bert_dim, out_channels=8, padding=2, kernel_size=3),
+#             nn.BatchNorm1d(8),
+#             nn.MaxPool1d(kernel_size=2, padding=1),
+#             nn.Conv1d(in_channels=8, out_channels=4, padding=2, kernel_size=3),
+#             nn.BatchNorm1d(4),
+#             nn.MaxPool1d(kernel_size=2, padding=1),
+#             nn.Flatten(),
+#             nn.Linear(12, self.hidden_size),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.hidden_size, self.channel_1),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.channel_1, self.channel_2),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.channel_2, self.channel_3),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.channel_3, self.channel_4),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.channel_4, self.batch_size),
+#         )
+
+#         self.bert_cls = nn.Sequential(
+#             nn.Conv1d(in_channels=self.bert_dim, out_channels=256, padding=0, kernel_size=3),
+#             nn.BatchNorm1d(256),
+#             nn.MaxPool1d(kernel_size=4, padding=1),
+#             nn.Conv1d(in_channels=256, out_channels=128, padding=0, kernel_size=3),
+#             nn.BatchNorm1d(128),
+#             nn.MaxPool1d(kernel_size=4),
+#             nn.Conv1d(in_channels=128, out_channels=64, padding=0, kernel_size=3),
+#             nn.BatchNorm1d(64),
+#             nn.MaxPool1d(kernel_size=4),
+#             nn.Flatten(),
+#             nn.Linear(128, self.hidden_size),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.hidden_size, self.channel_1),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.channel_1, self.channel_2),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.channel_2, self.channel_3),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.channel_3, self.channel_4),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.channel_4, self.batch_size),
+#         )
+        
+#         self.vb = nn.Sequential(
+#             nn.Linear(self.vb_dim, self.channel_2),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.channel_2, self.channel_3),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.channel_3, self.channel_4),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.channel_4, self.batch_size),
+#         )
+        
+#         self.pt_dem = nn.Sequential(
+#             nn.Linear(self.pt_dem_dim, self.hidden_size),
+#             nn.LeakyReLU(),
+#             nn.Dropout(p=self.dropout_rate),
+#             nn.Linear(self.hidden_size, self.batch_size),
+#         )
+        
+#         # Combine features from all modalities
+#         self.classifier = nn.Linear(self.batch_size*3, self.batch_size)
+    
+#     def forward(self, x1, x2, x3):
+#         if Config.getstr("bert", "bert_mode") == "discrete":
+#             if Config.getstr("preprocess", "encode_mode") == "label":
+#                 # Permute tensor to match Conv1d input requirements (batch_size, in_channels, seq_length)
+#                 x1 = x1.permute(0, 2, 1)
+#                 out1 = self.bert_label(x1)
+#             elif Config.getstr("preprocess", "encode_mode") == "onehot":
+#                 # Permute tensor to match Conv1d input requirements (batch_size, in_channels, seq_length)
+#                 x1 = x1.permute(0, 2, 1)        
+#                 out1 = self.bert_onehot(x1)
+#         elif Config.getstr("bert", "bert_mode") == "cls":
+#             # Permute tensor to match Conv1d input requirements (batch_size, in_channels, seq_length)
+#             x1 = x1.permute(0, 2, 1)    
+#             out1 = self.bert_cls(x1)
+
+#         out2 = self.vb(x2)
+#         out3 = self.pt_dem(x3)
+
+#         out1 = out1.squeeze(dim=1)
+#         out2 = out2.squeeze(dim=1)
+#         out3 = out3.squeeze(dim=1)
+        
+#         # Concatenate features
+#         combined_features = torch.cat((out1, out2, out3))
+#         out = self.classifier(combined_features)
+
+#         out = torch.sigmoid(out)
+        
+#         return out
