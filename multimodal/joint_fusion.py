@@ -152,7 +152,7 @@ class JointFusion_FC_Losses(nn.Module):
     dropout_rate (float)
     """
     def __init__(self, batch_size, bert_dim, vb_dim, pt_dem_dim, hidden_size, dropout_rate=0.5):
-        super(JointFusion_FC, self).__init__()
+        super(JointFusion_FC_Losses, self).__init__()
         self.batch_size = batch_size
         self.bert_dim = bert_dim
         self.vb_dim = vb_dim
@@ -217,17 +217,20 @@ class JointFusion_FC_Losses(nn.Module):
         x2 = self.vb(x2)
         x3 = self.pt_dem(x3)
 
-        x1 = torch.flatten(x1)
-        x2 = torch.flatten(x2)
-        x3 = torch.flatten(x3)
+        out1 = torch.flatten(x1)
+        out2 = torch.flatten(x2)
+        out3 = torch.flatten(x3)
 
-        out = torch.cat((x1, x2, x3))
+        out = torch.cat((out1, out2, out3))
         out = self.classifier(out)
 
         # Apply sigmoid function
-        x = torch.sigmoid(x)
+        out1 = torch.sigmoid(out1)
+        out2 = torch.sigmoid(out2)
+        out3 = torch.sigmoid(out3)
+        out = torch.sigmoid(out)
 
-        return out, x1, x2, x3
+        return out, out1, out2, out3
     
 class JointFusion_FC_Attention_BeforeConcatenation(nn.Module):
     """
@@ -683,9 +686,9 @@ class JointFusion_CNN_NoReshape_Permute(nn.Module):
         self.resize_shape = int(hidden_size/self.channel_1)
         if Config.getstr("bert", "bert_mode") == "discrete":
             if Config.getstr("preprocess", "encode_mode") == "label":
-                self.bert_dim = 15
-            elif Config.getstr("preprocess", "encode_mode") == "onehot":
                 self.bert_dim = 3
+            elif Config.getstr("preprocess", "encode_mode") == "onehot":
+                self.bert_dim = 15
         elif Config.getstr("bert", "bert_mode") == "cls":
             self.bert_dim = 768
         
