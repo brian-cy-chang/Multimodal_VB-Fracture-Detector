@@ -81,6 +81,63 @@ def calculate_npv(tn, fn):
         return 0
     else:
         return tn / (tn + fn)
+    
+def kaiming_init(m):
+    if isinstance(m, (nn.Linear, nn.Conv1d, nn.Conv2d, nn.Conv3d)):
+        nn.init.kaiming_uniform_(m.weight)
+        if m.bias is not None:
+            nn.init.constant_(m.bias, 0)
+    elif isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d)):
+        nn.init.constant_(m.weight, 1)
+        nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.MultiheadAttention):
+        nn.init.xavier_normal_(m.in_proj_weight)
+        nn.init.constant_(m.in_proj_bias, 0)
+        nn.init.xavier_normal_(m.out_proj.weight)
+        nn.init.constant_(m.out_proj.bias, 0)
+    elif isinstance(m, nn.LayerNorm):
+        nn.init.constant_(m.weight, 1)
+        nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.Embedding):
+        nn.init.normal_(m.weight, mean=0, std=0.01)
+
+def xavier_init(m):
+    if isinstance(m, (nn.Linear, nn.Conv1d, nn.Conv2d, nn.Conv3d)):
+        nn.init.xavier_uniform_(m.weight)
+        if m.bias is not None:
+            nn.init.constant_(m.bias, 0)
+    elif isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d)):
+        nn.init.constant_(m.weight, 1)
+        nn.init.constant_(m.bias, )
+    elif isinstance(m, nn.MultiheadAttention):
+        nn.init.xavier_normal_(m.in_proj_weight)
+        nn.init.constant_(m.in_proj_bias, 0)
+        nn.init.xavier_normal_(m.out_proj.weight)
+        nn.init.constant_(m.out_proj.bias, 0)
+    elif isinstance(m, nn.LayerNorm):
+        nn.init.constant_(m.weight, 1)
+        nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.Embedding):
+        nn.init.normal_(m.weight, mean=0, std=0.01)
+
+def he_init(m):
+    if isinstance(m, (nn.Linear, nn.Conv1d, nn.Conv2d, nn.Conv3d)):
+        nn.init.kaiming_normal_(m.weight, nonlinearity='leaky_relu')
+        if m.bias is not None:
+            nn.init.constant_(m.bias, 0)
+    elif isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d)):
+        nn.init.constant_(m.weight, 1)
+        nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.MultiheadAttention):
+        nn.init.xavier_normal_(m.in_proj_weight)
+        nn.init.constant_(m.in_proj_bias, 0)
+        nn.init.xavier_normal_(m.out_proj.weight)
+        nn.init.constant_(m.out_proj.bias, 0)
+    elif isinstance(m, nn.LayerNorm):
+        nn.init.constant_(m.weight, 1)
+        nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.Embedding):
+        nn.init.normal_(m.weight, mean=0, std=0.01)
 
 class WeightedFocalLoss(nn.Module):
     """

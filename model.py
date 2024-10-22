@@ -23,23 +23,8 @@ import torch.optim as optim
 
 from config import Config
 # from multimodal_dataloader import MultimodalDataset
-from utils import WeightedFocalLoss, calculate_specificity, calculate_npv
+from utils import WeightedFocalLoss, kaiming_init, xavier_init, he_init, calculate_specificity, calculate_npv
 import user_params as uparams
-
-def kaiming_init(m):
-    if isinstance(m, nn.Linear) or isinstance(m, nn.Conv1d):
-        nn.init.kaiming_uniform_(m.weight)
-        # m.bias.data.fill_(0.01)
-
-def xavier_init(m):
-    if isinstance(m, nn.Linear) or isinstance(m, nn.Conv1d):
-        nn.init.xavier_uniform_(m.weight)
-        # m.bias.data.fill_(0.01)
-
-def he_init(m):
-    if isinstance(m, nn.Linear) or isinstance(m, nn.Conv1d):
-        nn.init.kaiming_normal_(m.weight, nonlinearity='leaky_relu')
-        # m.bias.data.fill_(0.01)
 
 class Multimodal_VB_Fracture_Detector(nn.Module):
     """
@@ -849,7 +834,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
         Saves the predictions for a dataset using a fine-tuned model to output_folder
         """
         if not self.fine_tuned_path:
-            raise ValueError(f"Fine-tuned path to load a model is not defined")
+            raise ValueError(f"Fine-tuned path for model is not defined")
 
         # load model from fine-tuned
         self.__model, self.__criterion, self.__optimizer, self.__scheduler = self.load_model(self.__predict_loader, self.patience, self.fine_tuned_path)
