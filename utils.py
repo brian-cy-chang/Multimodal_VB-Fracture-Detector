@@ -27,61 +27,7 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-def accuracy_fn(tp, tn, total):
-    """
-    Calculate accuracy by comparing model predictions to ground truth labels
-
-    Parameters
-    ----------
-    tp (int): true positives per epoch
-    tn (int): true negatives per epoch
-    total (int): number of data points per epoch
-    """
-    acc = ((tp+tn) / total) * 100 
-    return acc
-
-def calculate_specificity(tn, fp):
-    """
-    Calculate the specificity (True Negative Rate) given the number of true negatives (TN) and false positives (FP).
-
-    Specificity is defined as the proportion of true negatives out of the total number of actual negatives.
-    It is calculated as: specificity = TN / (TN + FP)
-
-    Parameters
-    ----------
-    tn (int): Number of true negatives
-    fp (int): Number of false positives
-
-    Returns
-    -------
-    float: Specificity value. Returns 0 if the denominator (TN + FP) is zero to avoid division by zero.
-    """
-    if (tn + fp) == 0:
-        return 0
-    else:
-        return tn / (tn + fp)
-    
-def calculate_npv(tn, fn):
-    """
-    Calculate the Negative Predictive Value (NPV) given the number of true negatives (TN) and false negatives (FN).
-
-    NPV is defined as the proportion of true negatives out of the total number of predicted negatives.
-    It is calculated as: NPV = TN / (TN + FN)
-
-    Parameters
-    ----------
-    tn (int): Number of true negatives
-    fn (int): Number of false negatives
-
-    Returns
-    -------
-    float: NPV value. Returns 0 if the denominator (TN + FN) is zero to avoid division by zero.
-    """
-    if (tn + fn) == 0:
-        return 0
-    else:
-        return tn / (tn + fn)
-    
+""" weight initialization """
 def kaiming_init(m):
     if isinstance(m, (nn.Linear, nn.Conv1d, nn.Conv2d, nn.Conv3d)):
         nn.init.kaiming_uniform_(m.weight)
@@ -139,6 +85,63 @@ def he_init(m):
     elif isinstance(m, nn.Embedding):
         nn.init.normal_(m.weight, mean=0, std=0.01)
 
+""" confusion matrix metrics """
+def accuracy_fn(tp, tn, total):
+    """
+    Calculate accuracy by comparing model predictions to ground truth labels
+
+    Parameters
+    ----------
+    tp (int): true positives per epoch
+    tn (int): true negatives per epoch
+    total (int): number of data points per epoch
+    """
+    acc = ((tp+tn) / total) * 100 
+    return acc
+
+def calculate_specificity(tn, fp):
+    """
+    Calculate the specificity (True Negative Rate) given the number of true negatives (TN) and false positives (FP).
+
+    Specificity is defined as the proportion of true negatives out of the total number of actual negatives.
+    It is calculated as: specificity = TN / (TN + FP)
+
+    Parameters
+    ----------
+    tn (int): Number of true negatives
+    fp (int): Number of false positives
+
+    Returns
+    -------
+    float: Specificity value. Returns 0 if the denominator (TN + FP) is zero to avoid division by zero.
+    """
+    if (tn + fp) == 0:
+        return 0
+    else:
+        return tn / (tn + fp)
+    
+def calculate_npv(tn, fn):
+    """
+    Calculate the Negative Predictive Value (NPV) given the number of true negatives (TN) and false negatives (FN).
+
+    NPV is defined as the proportion of true negatives out of the total number of predicted negatives.
+    It is calculated as: NPV = TN / (TN + FN)
+
+    Parameters
+    ----------
+    tn (int): Number of true negatives
+    fn (int): Number of false negatives
+
+    Returns
+    -------
+    float: NPV value. Returns 0 if the denominator (TN + FN) is zero to avoid division by zero.
+    """
+    if (tn + fn) == 0:
+        return 0
+    else:
+        return tn / (tn + fn)
+
+""" loss functions """
 class WeightedFocalLoss(nn.Module):
     """
     Non weighted version of Focal Loss
@@ -161,7 +164,8 @@ class WeightedFocalLoss(nn.Module):
         pt = torch.exp(-BCE_loss)
         F_loss = at*(1-pt)**self.gamma * BCE_loss
         return F_loss.mean()
-
+    
+""" save best model functions """
 class SaveBestModel_F1:
     """
     Saves best model based on validation F1 score to .pth file
