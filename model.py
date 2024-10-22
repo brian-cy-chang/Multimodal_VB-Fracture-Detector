@@ -317,7 +317,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
 
                 # load the fine_tuned_path checkpoint
                 checkpoint = torch.load(fine_tuned_path)
-                model = model.load_state_dict(checkpoint['model_state_dict'])
+                model.load_state_dict(checkpoint['model_state_dict'])
                 optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
                 criterion.load_state_dict(checkpoint["criterion_state_dict"])
                 break
@@ -350,7 +350,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
 
                 # load the fine_tuned_path checkpoint
                 checkpoint = torch.load(fine_tuned_path)
-                model = model.load_state_dict(checkpoint['model_state_dict'])
+                model.load_state_dict(checkpoint['model_state_dict'])
                 optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
                 criterion.load_state_dict(checkpoint["criterion_state_dict"])
                 break
@@ -383,7 +383,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
 
                 # load the fine_tuned_path checkpoint
                 checkpoint = torch.load(fine_tuned_path)
-                model = model.load_state_dict(checkpoint['model_state_dict'])
+                model.load_state_dict(checkpoint['model_state_dict'])
                 optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
                 criterion.load_state_dict(checkpoint["criterion_state_dict"])
                 break                
