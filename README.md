@@ -44,7 +44,7 @@ As the multimodal models leverage outputs from other models, please refer to the
 Two modes are available: `train` or `predict`. Model training can be done *de novo* or from a model checkpoint. Please refer to the configuration file for each parameter setting. Command line parameters will override those set in the configuration file. 
 
 ```python
-python main.py [--parameter]
+python main.py
 ```
 
 ## Acknowledgments

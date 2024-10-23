@@ -157,7 +157,7 @@ class WeightedFocalLoss(nn.Module):
     def forward(self, inputs, targets):
         # Move alpha to the same device as inputs
         if inputs.is_cuda:
-            self.alpha = self.alpha.cuda()
+            self.alpha = self.alpha.to(inputs.device)
 
         BCE_loss = F.binary_cross_entropy(inputs, targets, reduction='none')
         targets = targets.type(torch.long)
