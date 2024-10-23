@@ -26,6 +26,7 @@ def set_seed(seed):
     random.seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.enabled = True
 
 """ weight initialization """
 def kaiming_init(m):
@@ -144,7 +145,7 @@ def calculate_npv(tn, fn):
 """ loss functions """
 class WeightedFocalLoss(nn.Module):
     """
-    Non weighted version of Focal Loss
+    Weighted version of Focal Loss
 
     from https://web.archive.org/web/20221101163651/https://amaarora.github.io/2020/06/29/FocalLoss.html
     """
