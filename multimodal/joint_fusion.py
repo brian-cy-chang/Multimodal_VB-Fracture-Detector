@@ -25,22 +25,6 @@ class Attention(nn.Module):
         attn_weights = torch.softmax(x, dim=1)
         return attn_weights
     
-# class AdaptiveFusion(nn.Module):
-#     def __init__(self, bert_dim, vb_dim, pt_dem_dim):
-#         super(AdaptiveFusion, self).__init__()
-#         self.bert = nn.Parameter(torch.ones(1))
-#         self.vb = nn.Parameter(torch.ones(1))
-#         self.pt_dem = nn.Parameter(torch.ones(1))
-#         self.fc = nn.Linear(bert_dim + vb_dim + pt_dem_dim, 128)
-
-#     def forward(self, x1, x2, x3):
-#         x1_weighted = self.bert * x1
-#         x2_weighted = self.vb * x2
-#         x3_weighted = self.pt_dem * x3
-#         combined_features = torch.cat((x1_weighted, x2_weighted, x3_weighted), dim=1)
-#         out = self.fc(combined_features)
-#         return out
-
 """ Joint Fusion FC Blocks """
 class Bert_FC_Block(nn.Module):
     def __init__(self, batch_size, bert_dim, hidden_size, dropout_rate, channel_1, channel_2, channel_3, channel_4):
@@ -1178,6 +1162,7 @@ class JointFusion_Transformer(nn.Module):
 
         return out
     
+""" CNN Models with increasing convolution size """
 class JointFusion_CNN_Large(nn.Module):
     """
     Joint fusion model that reshapes BERT-EE 
@@ -1663,6 +1648,22 @@ class JointFusion_CNN_Large_Attention_BeforeConcatenation(nn.Module):
         
 #         return out
 
+# class AdaptiveFusion(nn.Module):
+#     def __init__(self, bert_dim, vb_dim, pt_dem_dim):
+#         super(AdaptiveFusion, self).__init__()
+#         self.bert = nn.Parameter(torch.ones(1))
+#         self.vb = nn.Parameter(torch.ones(1))
+#         self.pt_dem = nn.Parameter(torch.ones(1))
+#         self.fc = nn.Linear(bert_dim + vb_dim + pt_dem_dim, 128)
+
+#     def forward(self, x1, x2, x3):
+#         x1_weighted = self.bert * x1
+#         x2_weighted = self.vb * x2
+#         x3_weighted = self.pt_dem * x3
+#         combined_features = torch.cat((x1_weighted, x2_weighted, x3_weighted), dim=1)
+#         out = self.fc(combined_features)
+#         return out
+
 # class JointFusion_CNN_Adaptive(nn.Module):
 #     """
 #     Joint fusion model that reshapes BERT-EE 
@@ -1743,4 +1744,4 @@ class JointFusion_CNN_Large_Attention_BeforeConcatenation(nn.Module):
 #         # Apply sigmoid function
 #         out = torch.sigmoid(out)
 
-        return out
+#         return out
