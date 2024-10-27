@@ -522,7 +522,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                                              "train_tp": tp, "train_fp": fp, "train_fn": fn, "train_tn": tn,
                                              'validation_loss': validation_loss_epoch, 'validation_accuracy': validation_epoch_acc, "validation_specificity": validation_specificty,
                                              "validation_precision": validation_precision, "validation_recall": validation_recall, "validation_f1": validation_f1, "validation_npv": validation_npv,
-                                             "validation_tp": validation_tp, "validation_fp": validation_fp, "validation": validation_fn, "validation_tn": validation_tn,
+                                             "validation_tp": validation_tp, "validation_fp": validation_fp, "validation_fn": validation_fn, "validation_tn": validation_tn,
                                              "learning_rate": self.__scheduler.get_last_lr()[0]}
             
             self.__train_preds[epoch+1] = {"image_id": self.__train_image_ids, "score": self.__train_scores, "pred": self.__train_outputs, "label": self.__train_labels}
@@ -704,7 +704,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                                              "train_tp": tp, "train_fp": fp, "train_fn": fn, "train_tn": tn,
                                              'validation_loss': validation_loss_epoch, 'validation_accuracy': validation_epoch_acc, 
                                              "validation_precision": validation_precision, "validation_recall": validation_recall, "validation_f1": validation_f1, 
-                                             "validation_tp": validation_tp, "validation_fp": validation_fp, "validation": validation_fn, "validation_tn": validation_tn,
+                                             "validation_tp": validation_tp, "validation_fp": validation_fp, "validation_fn": validation_fn, "validation_tn": validation_tn,
                                              "learning_rate": self.__scheduler.get_last_lr()[0]}
             
             self.__train_preds[epoch+1] = {"image_id": self.__train_image_ids, "score": self.__train_scores, "pred": self.__train_outputs, "label": self.__train_labels}
