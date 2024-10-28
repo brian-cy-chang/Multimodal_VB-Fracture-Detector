@@ -249,7 +249,7 @@ class BERTCls(nn.Module):
     def forward(self, x):
         return self.model(x)
 
-""" Joint-Fusion FC Models """
+""" Joint Fusion FC Models """
 class JointFusion_FC(nn.Module):
     """
     Joint fusion model with fully connected layers

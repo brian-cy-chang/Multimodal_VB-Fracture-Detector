@@ -30,7 +30,6 @@ class LateFusion_FC(nn.Module):
         self.resize_shape = int(hidden_size/self.channel_1)
         
         self.input_size = self.bert_dim + self.vb_dim + self.pt_dem_dim
-        
         self.classifier = nn.Sequential(
             nn.Linear(self.input_size, self.hidden_size),
             nn.LeakyReLU(),
@@ -48,7 +47,7 @@ class LateFusion_FC(nn.Module):
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
             nn.Linear(self.channel_4, self.batch_size),
-            nn.LeakyReLU(),
+            # nn.LeakyReLU(),
         )
 
     def forward(self, x1, x2, x3):
@@ -93,7 +92,7 @@ class LateFusion_CNN(nn.Module):
         self.resize_shape = int(hidden_size/self.channel_1)
                 
         self.input_size = self.bert_dim + self.vb_dim + self.pt_dem_dim
-        self.bert = nn.Sequential(
+        self.classifier= nn.Sequential(
             nn.Linear(self.input_size, 1024),
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
@@ -113,7 +112,6 @@ class LateFusion_CNN(nn.Module):
             nn.LeakyReLU(),
             nn.Dropout(p=self.dropout_rate),
             nn.Linear(self.channel_4, self.batch_size),
-            # nn.LeakyReLU(),
         )
         
         # for reducing the output to match the label size
