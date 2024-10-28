@@ -837,7 +837,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
             raise ValueError(f"Fine-tuned path for model is not defined")
 
         # load model from fine-tuned
-        self.__model, self.__criterion, self.__optimizer, self.__scheduler = self.load_model(self.__predict_loader, self.patience, self.fine_tuned_path)
+        self.__model, self.__criterion, self.__optimizer, self.__scheduler = self.load_model(self.__predict_loader, self.fine_tuned_path)
         self.__model.to(self.__device)
         self.__preds_df = None
         self.__preds = []
