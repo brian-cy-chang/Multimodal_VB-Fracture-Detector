@@ -22,7 +22,6 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 
 from config import Config
-# from multimodal_dataloader import MultimodalDataset
 from utils import WeightedFocalLoss, kaiming_init, xavier_init, he_init, calculate_specificity, calculate_npv
 import user_params as uparams
 
@@ -84,7 +83,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
         self.results_path = Config.get_resultfolder()
 
         from multimodal_dataloader import CustomCollate, MultimodalDataset
-        from utils import SaveBestModel_F1, SaveBestModel_ValidationLoss
+        from utils import SaveBestModel_ValidationLoss
         if self.save_name:
             self.save_best_model = SaveBestModel_ValidationLoss(os.path.join(self.results_path, self.save_name))
         else:
@@ -748,87 +747,6 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
         self.__validation_df = pd.DataFrame.from_dict(data=self.__validation_preds[self.__best_val_loss_epoch+1])
         self.save_predictions(self.__validation_df, save_name=f"validation_epoch{self.__best_val_loss_epoch+1}")
 
-    def evaluate_model(self, dataloader):
-        self.__model, self.__criterion, self.__optimizer, self.__scheduler = self.load_model(self.__predict_loader, self.fine_tuned_path)
-        self.__model.to(self.__device)
-
-        self.__loss_lst = []
-        self.__acc_lst = []
-
-        self.__preds = []
-        self.__scores = []
-        self.__image_ids = []
-        self.__running_loss = 0.0
-
-        if "Losses" not in self.model_name:
-            with torch.no_grad():
-                for step, batch in enumerate(dataloader):
-                    batch_size = len(batch[0][0])
-                    bert_batch = batch[0][0].to(self.__device)
-                    vb_batch = batch[0][1].to(self.__device)
-                    pt_dem_batch = batch[0][2].to(self.__device)
-                    label_batch = batch[0][3].to(self.__device)
-                    image_id = batch[1]
-                    # 1. Forward pass
-                    y_pred = self.__model(bert_batch, vb_batch, pt_dem_batch)
-                    out = (y_pred>self.threshold).float()
-
-                    self.__image_ids.append(image_id[0])
-                    self.__scores.append(y_pred.detach().cpu().numpy().astype(float)[0])
-                    self.__preds.append(out.detach().cpu().numpy().astype(int)[0])
-
-                    # 2. Calculate loss/accuracy
-                    self.__loss = self.__criterion(y_pred.to(self.__device), label_batch.to(self.__device))       
-                    self.__running_loss += self.__loss.item()*label_batch.size(0)
-
-                loss_total = self.__running_loss / len(dataloader)
-                self.__loss_lst.append(loss_total)
-
-                epoch_acc = accuracy_score(self.__validation_labels, self.__validation_outputs)*100
-                precision = precision_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-                recall = recall_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-                f1 = f1_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-                self.__acc_lst.append(epoch_acc)
-
-                print(f"Precision: {precision:.3f}%, Recall: {recall:.3f}%, F1 Score: {f1:.3f}%")
-
-            return loss_total, epoch_acc, precision, recall, f1
-        
-        elif "Losses" in self.model_name:
-            with torch.no_grad():
-                for step, batch in enumerate(dataloader):
-                    batch_size = len(batch[0][0])
-                    bert_batch = batch[0][0].to(self.__device)
-                    vb_batch = batch[0][1].to(self.__device)
-                    pt_dem_batch = batch[0][2].to(self.__device)
-                    label_batch = batch[0][3].to(self.__device)
-                    image_id = batch[1]
-                    # 1. Forward pass
-                    y_pred, out1, out2, out3 = self.__model(bert_batch, vb_batch, pt_dem_batch)
-                    out = (y_pred>self.threshold).float()
-
-                    self.__image_ids.append(image_id[0])
-                    self.__scores.append(y_pred.detach().cpu().numpy().astype(float)[0])
-                    self.__preds.append(out.detach().cpu().numpy().astype(int)[0])
-
-                # 2. Calculate loss/accuracy
-                    self.__loss = self.__criterion(y_pred.to(self.__device), label_batch.to(self.__device))       
-                    self.__running_loss += self.__loss.item()*label_batch.size(0)
-
-                loss_total = self.__running_loss / len(dataloader)
-                self.__loss_lst.append(loss_total)
-
-                epoch_acc = accuracy_score(self.__validation_labels, self.__validation_outputs)*100
-                precision = precision_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-                recall = recall_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-                f1 = f1_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-                self.__acc_lst.append(epoch_acc)
-
-                # self.__evaluation_metrics[epoch+1] = {'evaluation_loss': self.__loss_lst, 'evaluation_accuracy': self.__acc_lst}
-
-                print(f"Epoch: {epoch+1} | Loss: {loss_total:.5f}, Accuracy: {epoch_acc:.3f}%")
-                print(f"Precision: {precision:.3f}%, Recall: {recall:.3f}%, F1 Score: {f1:.3f}%")
-
     def predict(self):
         """
         Saves the predictions for a dataset using a fine-tuned model to output_folder
@@ -907,3 +825,84 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
         """
         self.__train_metrics_df = pd.DataFrame.from_dict(train_metrics, orient="index")
         self.__train_metrics_df.to_csv(os.path.join(self.results_path, f"{self.save_name}_"+datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')+f"_training_metrics.csv"), index=False)
+
+    # def evaluate_model(self, dataloader):
+    #     self.__model, self.__criterion, self.__optimizer, self.__scheduler = self.load_model(self.__predict_loader, self.fine_tuned_path)
+    #     self.__model.to(self.__device)
+
+    #     self.__loss_lst = []
+    #     self.__acc_lst = []
+
+    #     self.__preds = []
+    #     self.__scores = []
+    #     self.__image_ids = []
+    #     self.__running_loss = 0.0
+
+    #     if "Losses" not in self.model_name:
+    #         with torch.no_grad():
+    #             for step, batch in enumerate(dataloader):
+    #                 batch_size = len(batch[0][0])
+    #                 bert_batch = batch[0][0].to(self.__device)
+    #                 vb_batch = batch[0][1].to(self.__device)
+    #                 pt_dem_batch = batch[0][2].to(self.__device)
+    #                 label_batch = batch[0][3].to(self.__device)
+    #                 image_id = batch[1]
+    #                 # 1. Forward pass
+    #                 y_pred = self.__model(bert_batch, vb_batch, pt_dem_batch)
+    #                 out = (y_pred>self.threshold).float()
+
+    #                 self.__image_ids.append(image_id[0])
+    #                 self.__scores.append(y_pred.detach().cpu().numpy().astype(float)[0])
+    #                 self.__preds.append(out.detach().cpu().numpy().astype(int)[0])
+
+    #                 # 2. Calculate loss/accuracy
+    #                 self.__loss = self.__criterion(y_pred.to(self.__device), label_batch.to(self.__device))       
+    #                 self.__running_loss += self.__loss.item()*label_batch.size(0)
+
+    #             loss_total = self.__running_loss / len(dataloader)
+    #             self.__loss_lst.append(loss_total)
+
+    #             epoch_acc = accuracy_score(self.__validation_labels, self.__validation_outputs)*100
+    #             precision = precision_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
+    #             recall = recall_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
+    #             f1 = f1_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
+    #             self.__acc_lst.append(epoch_acc)
+
+    #             print(f"Precision: {precision:.3f}%, Recall: {recall:.3f}%, F1 Score: {f1:.3f}%")
+
+    #         return loss_total, epoch_acc, precision, recall, f1
+        
+    #     elif "Losses" in self.model_name:
+    #         with torch.no_grad():
+    #             for step, batch in enumerate(dataloader):
+    #                 batch_size = len(batch[0][0])
+    #                 bert_batch = batch[0][0].to(self.__device)
+    #                 vb_batch = batch[0][1].to(self.__device)
+    #                 pt_dem_batch = batch[0][2].to(self.__device)
+    #                 label_batch = batch[0][3].to(self.__device)
+    #                 image_id = batch[1]
+    #                 # 1. Forward pass
+    #                 y_pred, out1, out2, out3 = self.__model(bert_batch, vb_batch, pt_dem_batch)
+    #                 out = (y_pred>self.threshold).float()
+
+    #                 self.__image_ids.append(image_id[0])
+    #                 self.__scores.append(y_pred.detach().cpu().numpy().astype(float)[0])
+    #                 self.__preds.append(out.detach().cpu().numpy().astype(int)[0])
+
+    #             # 2. Calculate loss/accuracy
+    #                 self.__loss = self.__criterion(y_pred.to(self.__device), label_batch.to(self.__device))       
+    #                 self.__running_loss += self.__loss.item()*label_batch.size(0)
+
+    #             loss_total = self.__running_loss / len(dataloader)
+    #             self.__loss_lst.append(loss_total)
+
+    #             epoch_acc = accuracy_score(self.__validation_labels, self.__validation_outputs)*100
+    #             precision = precision_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
+    #             recall = recall_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
+    #             f1 = f1_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
+    #             self.__acc_lst.append(epoch_acc)
+
+    #             # self.__evaluation_metrics[epoch+1] = {'evaluation_loss': self.__loss_lst, 'evaluation_accuracy': self.__acc_lst}
+
+    #             print(f"Epoch: {epoch+1} | Loss: {loss_total:.5f}, Accuracy: {epoch_acc:.3f}%")
+    #             print(f"Precision: {precision:.3f}%, Recall: {recall:.3f}%, F1 Score: {f1:.3f}%")

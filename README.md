@@ -26,7 +26,7 @@ Note:
 ### Datasets
 As the multimodal models leverage outputs from other models, please refer to the configuration file, `config.ini`, and set the paths for each, respectively.
 1. The BERT-based model outputs can be produced by the ensemble models found at [BERT-EE_Ensemble-Fractures](https://github.com/brian-cy-chang/BERT-EE_Ensemble-Fractures).
-2. The VB classification results can be produced by an imaging analysis pipeline found at [OCFScreener](). Please follow instructions to gain access to the source code.
+2. The VB classification results can be produced by an imaging analysis pipeline found at [OCFScreener]() (under construction). Please follow instructions to gain access to the source code.
 3. Please obtain patient demographics for your dataset. The data should follow the format below.
 
 | image_id                      | PatientSex         | Age (years)              | Race                                 | MultipleRaces  | Ethnicity | subject_id
