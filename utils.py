@@ -100,47 +100,111 @@ def accuracy_fn(tp, tn, total):
     acc = ((tp+tn) / total) * 100 
     return acc
 
-def calculate_specificity(tn, fp):
+def calculate_specificity(y_true, y_pred):
     """
-    Calculate the specificity (True Negative Rate) given the number of true negatives (TN) and false positives (FP).
+    Calculate the specificity for a binary classification task.
 
-    Specificity is defined as the proportion of true negatives out of the total number of actual negatives.
-    It is calculated as: specificity = TN / (TN + FP)
+    Specificity is the proportion of true negatives (TN) out of the total number of actual negatives (TN + FP).
 
     Parameters
     ----------
-    tn (int): Number of true negatives
-    fp (int): Number of false positives
+    y_true : list of int
+        Ground truth (correct) labels. Each element should be 0 or 1.
+    y_pred : list of int
+        Predicted labels, as returned by a classifier. Each element should be 0 or 1.
 
     Returns
     -------
-    float: Specificity value. Returns 0 if the denominator (TN + FP) is zero to avoid division by zero.
+    specificity : float
+        The specificity of the predictions. Returns 0 if the denominator is zero.
+
+    Examples
+    --------
+    >>> y_true = [0, 1, 0, 1, 0, 1, 0, 0, 1, 1]
+    >>> y_pred = [0, 1, 0, 0, 0, 1, 1, 0, 1, 1]
+    >>> calculate_specificity(y_true, y_pred)
+    0.8
     """
-    if (tn + fp) == 0:
+    TN = sum((y_true[i] == 0 and y_pred[i] == 0) for i in range(len(y_true)))
+    FP = sum((y_true[i] == 0 and y_pred[i] == 1) for i in range(len(y_true)))
+    if (TN + FP) == 0:
         return 0
-    else:
-        return tn / (tn + fp)
+    specificity = TN / (TN + FP)
+    return specificity
+
+def calculate_npv(y_true, y_pred):
+    """
+    Calculate the Negative Predictive Value (NPV) for a binary classification task.
+
+    NPV is the proportion of true negatives (TN) out of the total number of predicted negatives (TN + FN).
+
+    Parameters
+    ----------
+    y_true : list of int
+        Ground truth (correct) labels. Each element should be 0 or 1.
+    y_pred : list of int
+        Predicted labels, as returned by a classifier. Each element should be 0 or 1.
+
+    Returns
+    -------
+    npv : float
+        The Negative Predictive Value of the predictions. Returns 0 if the denominator is zero.
+
+    Examples
+    --------
+    >>> y_true = [0, 1, 0, 1, 0, 1, 0, 0, 1, 1]
+    >>> y_pred = [0, 1, 0, 0, 0, 1, 1, 0, 1, 1]
+    >>> calculate_npv(y_true, y_pred)
+    0.8
+    """
+    TN = sum((y_true[i] == 0 and y_pred[i] == 0) for i in range(len(y_true)))
+    FN = sum((y_true[i] == 1 and y_pred[i] == 0) for i in range(len(y_true)))
+    if (TN + FN) == 0:
+        return 0
+    npv = TN / (TN + FN)
+    return npv
+
+# def calculate_specificity(tn, fp):
+#     """
+#     Calculate the specificity (True Negative Rate) given the number of true negatives (TN) and false positives (FP).
+
+#     Specificity is defined as the proportion of true negatives out of the total number of actual negatives.
+#     It is calculated as: specificity = TN / (TN + FP)
+
+#     Parameters
+#     ----------
+#     tn (int): Number of true negatives
+#     fp (int): Number of false positives
+
+#     Returns
+#     -------
+#     float: Specificity value. Returns 0 if the denominator (TN + FP) is zero to avoid division by zero.
+#     """
+#     if (tn + fp) == 0:
+#         return 0
+#     else:
+#         return tn / (tn + fp)
     
-def calculate_npv(tn, fn):
-    """
-    Calculate the Negative Predictive Value (NPV) given the number of true negatives (TN) and false negatives (FN).
+# def calculate_npv(tn, fn):
+#     """
+#     Calculate the Negative Predictive Value (NPV) given the number of true negatives (TN) and false negatives (FN).
 
-    NPV is defined as the proportion of true negatives out of the total number of predicted negatives.
-    It is calculated as: NPV = TN / (TN + FN)
+#     NPV is defined as the proportion of true negatives out of the total number of predicted negatives.
+#     It is calculated as: NPV = TN / (TN + FN)
 
-    Parameters
-    ----------
-    tn (int): Number of true negatives
-    fn (int): Number of false negatives
+#     Parameters
+#     ----------
+#     tn (int): Number of true negatives
+#     fn (int): Number of false negatives
 
-    Returns
-    -------
-    float: NPV value. Returns 0 if the denominator (TN + FN) is zero to avoid division by zero.
-    """
-    if (tn + fn) == 0:
-        return 0
-    else:
-        return tn / (tn + fn)
+#     Returns
+#     -------
+#     float: NPV value. Returns 0 if the denominator (TN + FN) is zero to avoid division by zero.
+#     """
+#     if (tn + fn) == 0:
+#         return 0
+#     else:
+#         return tn / (tn + fn)
 
 """ loss functions """
 class WeightedFocalLoss(nn.Module):

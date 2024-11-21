@@ -474,8 +474,8 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
             train_precision = precision_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
             train_recall = recall_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
             train_f1 = f1_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
-            train_specificty = calculate_specificity(tn, fp)*100
-            train_npv = calculate_npv(tn, fn)*100
+            train_specificty = calculate_specificity(self.__train_labels, self.__train_outputs)*100
+            train_npv = calculate_npv(self.__train_labels, self.__train_outputs)*100
 
             ### Evaluation
             self.__model.eval()
@@ -509,8 +509,8 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                 validation_precision = precision_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
                 validation_recall = recall_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
                 validation_f1 = f1_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-                validation_specificty = calculate_specificity(validation_tn, validation_fp)*100
-                validation_npv = calculate_npv(validation_tn, validation_fn)*100
+                validation_specificty = calculate_specificity(self.__validation_labels, self.__validation_outputs)*100
+                validation_npv = calculate_npv(self.__validation_labels, self.__validation_outputs)*100
 
             # 7. Scheduler step
             self.__scheduler.step(validation_loss_epoch)
@@ -652,7 +652,8 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
             train_precision = precision_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
             train_recall = recall_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
             train_f1 = f1_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
-            train_specificity = tn / (tn+fp)
+            train_specificty = calculate_specificity(self.__train_labels, self.__train_outputs)*100
+            train_npv = calculate_npv(self.__train_labels, self.__train_outputs)*100
 
             ### Evaluation
             self.__model.eval()
@@ -693,16 +694,18 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                 validation_precision = precision_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
                 validation_recall = recall_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
                 validation_f1 = f1_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
+                validation_specificty = calculate_specificity(self.__validation_labels, self.__validation_outputs)*100
+                validation_npv = calculate_npv(self.__validation_labels, self.__validation_outputs)*100
 
             # 7. Scheduler step
             self.__scheduler.step(validation_loss_epoch)
 
             # safe each epoch training metrics
-            self.__train_metrics[epoch+1] = {'train_loss': train_loss_epoch, 'train_accuracy': train_epoch_acc, 
-                                             "train_precision": train_precision, "train_recall": train_recall, "train_f1": train_f1, 
+            self.__train_metrics[epoch+1] = {'train_loss': train_loss_epoch, 'train_accuracy': train_epoch_acc, "train_specificity": train_specificty,
+                                             "train_precision": train_precision, "train_recall": train_recall, "train_f1": train_f1, "train_npv": train_npv,
                                              "train_tp": tp, "train_fp": fp, "train_fn": fn, "train_tn": tn,
-                                             'validation_loss': validation_loss_epoch, 'validation_accuracy': validation_epoch_acc, 
-                                             "validation_precision": validation_precision, "validation_recall": validation_recall, "validation_f1": validation_f1, 
+                                             'validation_loss': validation_loss_epoch, 'validation_accuracy': validation_epoch_acc, "validation_specificity": validation_specificty,
+                                             "validation_precision": validation_precision, "validation_recall": validation_recall, "validation_f1": validation_f1, "validation_npv": validation_npv,
                                              "validation_tp": validation_tp, "validation_fp": validation_fp, "validation_fn": validation_fn, "validation_tn": validation_tn,
                                              "learning_rate": self.__scheduler.get_last_lr()[0]}
             
