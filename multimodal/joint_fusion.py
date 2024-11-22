@@ -27,7 +27,7 @@ class Attention(nn.Module):
     
 """ Joint Fusion FC Blocks """
 class Bert_FC_Block(nn.Module):
-    def __init__(self, batch_size, bert_dim, hidden_size, dropout_rate, channel_1, channel_2, channel_3, channel_4):
+    def __init__(self, batch_size, bert_dim, hidden_size, channel_1, channel_2, channel_3, channel_4, dropout_rate):
         super(Bert_FC_Block, self).__init__()
         self.batch_size = batch_size
         self.hidden_size = hidden_size
@@ -277,7 +277,8 @@ class JointFusion_FC(nn.Module):
         self.channel_4 = int(self.channel_3/2)
         self.resize_shape = int(self.hidden_size/(self.channel_1))
         
-        self.bert = Bert_FC_Block(self.batch_size, self.bert_dim, self.hidden_size, self.dropout_rate)
+        self.bert = Bert_FC_Block(self.batch_size, self.bert_dim, self.hidden_size, self.channel_1, 
+                                  self.channel_2, self.channel_3, self.channel_4, self.dropout_rate)
         self.vb = nn.Linear(self.vb_dim, 8)
         self.pt_dem = nn.Linear(self.pt_dem_dim, 16)
         
@@ -429,7 +430,8 @@ class JointFusion_FC_Attention_BeforeConcatenation(nn.Module):
         self.channel_4 = int(self.channel_3/2)
         self.resize_shape = int(self.hidden_size/(self.channel_1))
         
-        self.bert = Bert_FC_Block(self.batch_size, self.bert_dim, self.hidden_size, self.dropout_rate)
+        self.bert = Bert_FC_Block(self.batch_size, self.bert_dim, self.hidden_size, self.channel_1, 
+                                  self.channel_2, self.channel_3, self.channel_4,self.dropout_rate)
         self.vb = nn.Linear(self.vb_dim, 8)
         self.pt_dem = nn.Linear(self.pt_dem_dim, 16)
         
@@ -499,7 +501,8 @@ class JointFusion_FC_Attention_AfterConcatenation(nn.Module):
         self.channel_4 = int(self.channel_3/2)
         self.resize_shape = int(self.hidden_size/(self.channel_1))
         
-        self.bert = Bert_FC_Block(self.batch_size, self.bert_dim, self.hidden_size, self.dropout_rate)
+        self.bert = Bert_FC_Block(self.batch_size, self.bert_dim, self.hidden_size, self.channel_1, 
+                                  self.channel_2, self.channel_3, self.channel_4,self.dropout_rate)
         self.vb = nn.Linear(self.vb_dim, 8)
         self.pt_dem = nn.Linear(self.pt_dem_dim, 16)
         
