@@ -97,13 +97,13 @@ def main():
         elif Config.getstr("general", "mode").lower() == "predict":
             model.predict()
     elif Config.getstr("general", "model_name") == "LateFusion_FC":
-        model = Multimodal_VB_Fracture_Detector(LateFusion_FC)
+        model = Multimodal_VB_Fracture_Detector(LateFusion_FC_Average_Losses)
         if Config.getstr("general", "mode").lower() == "train" :
             model.train_model()
         elif Config.getstr("general", "mode").lower() == "predict":
             model.predict()
     elif Config.getstr("general", "model_name") == "LateFusion_CNN":
-        model = Multimodal_VB_Fracture_Detector(LateFusion_CNN)
+        model = Multimodal_VB_Fracture_Detector(LateFusion_CNN_Average_Losses)
         if Config.getstr("general", "mode").lower() == "train" :
             model.train_model()
         elif Config.getstr("general", "mode").lower() == "predict":
