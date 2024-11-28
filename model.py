@@ -393,10 +393,6 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
         """
         Run training for N epochs and save the best model based on 
             validation loss to output_path
-
-        Returns
-        -------
-        train_metrics (dict): with accuracy and losses
         """
         # Initialize or load fine-tuned model
         if "Losses" not in self.model_name:
@@ -536,11 +532,10 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                 # save the trained model weights with the best validation loss
                 self.save_best_model(self.__model, self.__optimizer, self.__criterion, epoch, validation_loss_epoch)
                 self.__best_val_loss_epoch = epoch
-
+                print(f"---------------------------------------------------")
                 print(f"Epoch: {epoch+1} | Train Loss: {train_loss_epoch:.5f}, Train Accuracy: {train_epoch_acc:.3f}% | Validation loss: {validation_loss_epoch:.5f}, Validation Accuracy: {validation_epoch_acc:.3f}%")
                 print(f"Training | Precision: {train_precision:.3f}%, Recall: {train_recall:.3f}%, F1 Score: {train_f1:.3f}%")
                 print(f"Validation | Precision: {validation_precision:.3f}%, Recall: {validation_recall:.3f}%, F1 Score: {validation_f1:.3f}%")
-                print("\n")
 
             # Early stopping check
             # if epoch - self.__best_f1_epoch >= self.patience:
@@ -721,11 +716,10 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                 # self.__best_f1_epoch = epoch
                 self.save_best_model(self.__model, self.__optimizer, self.__criterion, epoch, validation_loss_epoch)
                 self.__best_val_loss_epoch = epoch
-
+                print(f"---------------------------------------------------")
                 print(f"Epoch: {epoch+1} | Train Loss: {train_loss_epoch:.5f}, Train Accuracy: {train_epoch_acc:.3f}% | Validation loss: {validation_loss_epoch:.5f}, Validation Accuracy: {validation_epoch_acc:.3f}%")
                 print(f"Training | Precision: {train_precision:.3f}%, Recall: {train_recall:.3f}%, F1 Score: {train_f1:.3f}%")
                 print(f"Validation | Precision: {validation_precision:.3f}%, Recall: {validation_recall:.3f}%, F1 Score: {validation_f1:.3f}%")
-                print("\n")
 
             # Early stopping check
             # if epoch - self.__best_f1_epoch >= self.patience:
