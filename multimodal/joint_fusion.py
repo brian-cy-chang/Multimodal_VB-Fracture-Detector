@@ -1,10 +1,11 @@
-import os
+import math
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from config import Config
+from multimodal.ALiBi import ALiBiTransformerEncoder, ALiBiConfig
 
 class Attention(nn.Module):
     """
@@ -1079,17 +1080,16 @@ class JointFusion_CNN_Losses_Reshape(nn.Module):
         return out, out1, out2, out3
     
 """ Transformer-based models """
-    
 class JointFusion_Transformer(nn.Module):
     """
     Joint fusion model with transformer 
         encoder for BERT-EE outputs
     """
-    def __init__(self, batch_size, bert_dim, in_channels, vb_dim, pt_dem_dim, hidden_size, dropout_rate=0.5):
+    def __init__(self, batch_size, bert_seq_length, bert_dim, vb_dim, pt_dem_dim, hidden_size, dropout_rate=0.5):
         super(JointFusion_Transformer, self).__init__()
         self.batch_size = batch_size
+        self.bert_seq_length = bert_seq_length
         self.bert_dim = bert_dim
-        self.in_channels = in_channels
         self.vb_dim = vb_dim
         self.pt_dem_dim = pt_dem_dim
         self.dropout_rate = dropout_rate
@@ -1134,6 +1134,74 @@ class JointFusion_Transformer(nn.Module):
 
         # Pooling
         x1 = x1.mean(dim=0)
+
+        # Process x2 and x3
+        x2 = F.leaky_relu(self.fc_vb(x2))
+        x3 = F.leaky_relu(self.fc_pt_dem(x3))
+
+        x1 = x1.squeeze()
+        x2 = x2.squeeze()
+        x3 = x3.squeeze()
+
+        # Concatenate all modalities
+        out = torch.cat((x1, x2, x3))
+
+        # Final classification
+        out = self.classifier(out)
+        out = torch.sigmoid(out)
+
+        return out
+
+class JointFusion_ALiBi_Transformer(nn.Module):
+    """
+    Joint fusion model with transformer 
+        encoder that applies ALiBi
+        for BERT-EE outputs
+    """
+    def __init__(self, batch_size, bert_seq_length, bert_dim, vb_dim, pt_dem_dim, hidden_size, dropout_rate=0.5):
+        super(JointFusion_ALiBi_Transformer, self).__init__()
+        self.batch_size = batch_size
+        self.bert_seq_length = bert_seq_length
+        self.bert_dim = bert_dim
+        self.vb_dim = vb_dim
+        self.pt_dem_dim = pt_dem_dim
+        self.dropout_rate = dropout_rate
+        self.num_layers = 8
+        if Config.getstr("bert", "bert_mode") == "discrete":
+            self.num_heads = 3
+            if Config.getstr("preprocess", "encode_mode") == "onehot":
+                self.hidden_size = 15
+            elif Config.getstr("preprocess", "encode_mode") == "label":
+                self.hidden_size = 3
+        elif Config.getstr("bert", "bert_mode") == "cls":
+            self.hidden_size = 768
+            self.num_heads = 32
+        self.alibi_config = ALiBiConfig(num_layers=self.num_layers, d_model=self.bert_dim, num_heads=self.num_heads, max_len=256)
+
+        self.alibi = ALiBiTransformerEncoder(self.alibi_config)        
+        self.bn = nn.BatchNorm1d(self.bert_seq_length)
+
+        # Fully connected layers for x2 and x3
+        self.fc_vb = nn.Linear(self.vb_dim, 32)
+        self.fc_pt_dem = nn.Linear(self.pt_dem_dim, 32)
+
+        # Final classification layer
+        self.classifier = nn.Linear(self.hidden_size+32+32, self.batch_size)
+
+    def forward(self, x1, x2, x3):      
+        # Create attention mask for bert events
+        mask = (x1.sum(dim=-1) != 0).float()
+        extended_attention_mask = (1.0 - mask) * -10000.0
+
+        # Apply transformer to x1
+        x1 = self.alibi(x1, attention_mask=extended_attention_mask)
+
+        # Apply batch normalization
+        # x1 = self.bn(x1.transpose(1, 2)).transpose(1, 2)
+        x1 = self.bn(x1)
+
+        # Pooling
+        x1 = x1.mean(dim=1)
 
         # Process x2 and x3
         x2 = F.leaky_relu(self.fc_vb(x2))

@@ -296,8 +296,8 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                 label_batch = batch[0][3].to(self.__device)
                 image_id = batch[1]
                 model = self.model(batch_size=1,
-                                bert_dim=bert_batch.shape[1],
-                                in_channels=bert_batch.shape[2],
+                                bert_seq_length=bert_batch.shape[1],
+                                bert_dim=bert_batch.shape[2],
                                 vb_dim=vb_batch.shape[1],
                                 pt_dem_dim=pt_dem_batch.shape[1],
                                 hidden_size=256,
