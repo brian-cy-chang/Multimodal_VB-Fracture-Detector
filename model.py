@@ -311,7 +311,6 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                                                 gamma=Config.getfloat("model", "focal_loss_gamma"))
                 # optimizer = torch.optim.SGD(model.parameters(), lr=self.learning_rate, momentum=self.momentum)
                 optimizer = optim.AdamW(model.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
-                # scheduler = ReduceLROnPlateau(optimizer, patience=int(patience/2), mode="max")
                 scheduler = ReduceLROnPlateau(optimizer, patience=5, factor=self.learning_rate_decay_factor)
 
                 # load the fine_tuned_path checkpoint
@@ -344,7 +343,6 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                                                 gamma=Config.getfloat("model", "focal_loss_gamma"))
                 # optimizer = torch.optim.SGD(model.parameters(), lr=self.learning_rate, momentum=self.momentum)
                 optimizer = optim.AdamW(model.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
-                # scheduler = ReduceLROnPlateau(optimizer, patience=patience-5, mode="max")
                 scheduler = ReduceLROnPlateau(optimizer, patience=5, factor=self.learning_rate_decay_factor)
 
                 # load the fine_tuned_path checkpoint
@@ -377,7 +375,6 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                                                 gamma=Config.getfloat("model", "focal_loss_gamma"))
                 # optimizer = torch.optim.SGD(model.parameters(), lr=self.learning_rate, momentum=self.momentum)
                 optimizer = optim.AdamW(model.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
-                # scheduler = ReduceLROnPlateau(optimizer, patience=int(patience/2), mode="max")
                 scheduler = ReduceLROnPlateau(optimizer, patience=5, factor=self.learning_rate_decay_factor)
 
                 # load the fine_tuned_path checkpoint

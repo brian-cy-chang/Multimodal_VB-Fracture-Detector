@@ -1118,7 +1118,7 @@ class JointFusion_Transformer(nn.Module):
         self.fc_pt_dem = nn.Linear(self.pt_dem_dim, 32)
 
         # Final classification layer
-        self.classifier = nn.Linear(self.hidden_size+32+32, self.batch_size)
+        self.classifier = nn.Linear(self.bert_seq_length+32+32, self.batch_size)
 
     def forward(self, x1, x2, x3):      
         # Create attention mask for bert events
@@ -1130,10 +1130,10 @@ class JointFusion_Transformer(nn.Module):
         x1 = self.transformer(x1, src_key_padding_mask=extended_attention_mask)
 
         # Apply batch normalization
-        x1 = self.bn(x1.transpose(1, 2)).transpose(1, 2)
+        x1 = self.bn(x1.transpose(0, 1))
 
         # Pooling
-        x1 = x1.mean(dim=0)
+        x1 = x1.mean(dim=2)
 
         # Process x2 and x3
         x2 = F.leaky_relu(self.fc_vb(x2))
@@ -1154,9 +1154,8 @@ class JointFusion_Transformer(nn.Module):
 
 class JointFusion_ALiBi_Transformer(nn.Module):
     """
-    Joint fusion model with transformer 
-        encoder that applies ALiBi
-        for BERT-EE outputs
+    Joint fusion model with ALiBi transformer 
+        encoder for BERT-EE outputs
     """
     def __init__(self, batch_size, bert_seq_length, bert_dim, vb_dim, pt_dem_dim, hidden_size, dropout_rate=0.5):
         super(JointFusion_ALiBi_Transformer, self).__init__()
@@ -1197,7 +1196,6 @@ class JointFusion_ALiBi_Transformer(nn.Module):
         x1 = self.alibi(x1, attention_mask=extended_attention_mask)
 
         # Apply batch normalization
-        # x1 = self.bn(x1.transpose(1, 2)).transpose(1, 2)
         x1 = self.bn(x1)
 
         # Pooling
