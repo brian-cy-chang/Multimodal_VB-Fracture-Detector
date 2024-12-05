@@ -385,12 +385,8 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                 break                
         
         return model, optimizer, criterion, scheduler
-
+            
     def train_model(self):
-        """
-        Run training for N epochs and save the best model based on 
-            validation loss to output_path
-        """
         # Initialize or load fine-tuned model
         if "Losses" not in self.model_name:
             if not self.use_fine_tuned:
@@ -404,15 +400,14 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
                 self.__model.to(self.__device)
         else:
             print(f"******** {self.model_name} is not applicable for this model training ********")
-        
-        print(f"******** Starting training with {self.loss_function} loss ********")
+            
         self.__train_metrics = {}
         self.__train_preds = {}
         self.__validation_preds = {}
         self.__train_df = None
         self.__validation_df = None
-        # self.__best_f1_epoch = 0
         self.__best_val_loss_epoch = 0
+
         for epoch in tqdm(range(self.epochs), desc="Epoch"):
             ### Training
             self.__model.train()
@@ -420,12 +415,8 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
             self.__train_labels = []
             self.__train_scores = []
             self.__train_outputs = []
-            self.__validation_image_ids = []
-            self.__validation_scores = []
-            self.__validation_labels = []
-            self.__validation_outputs = []
             self.__running_loss = 0.0
-            # Loop over batches in an epoch using DataLoader
+
             for step, batch in enumerate(self.__train_loader):
                 batch_size = len(batch[0][0])
                 bert_batch = batch[0][0].to(self.__device)
@@ -436,126 +427,165 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
 
                 # 1. Forward pass
                 y_pred = self.__model(bert_batch, vb_batch, pt_dem_batch)
-                out = (y_pred>self.threshold).float()
+                out = (y_pred > self.threshold).float()
 
                 self.__train_scores.append(y_pred.detach().cpu().numpy().astype(float)[0])
                 self.__train_outputs.append(out.cpu().numpy().astype(int)[0])
                 self.__train_labels.append(label_batch.cpu().numpy().astype(int)[0])
                 self.__train_image_ids.append(image_id[0])
-            
+
                 # 2. Calculate loss/accuracy
                 loss = self.__criterion(y_pred, label_batch)
-                
+
                 # 3. Optimizer zero grad
                 self.__optimizer.zero_grad()
 
                 # 4. Gradient clipping
                 if Config.getstr("model", "grad_clipping"):
                     nn.utils.clip_grad_norm_(self.__model.parameters(), max_norm=1.0)
-                
+
                 # 5. Loss backwards
                 loss.backward()
-            
+
                 # 6. Optimizer step
                 self.__optimizer.step()
-                self.__running_loss += loss.item()*label_batch.size(0)
-                
+                self.__running_loss += loss.item() * label_batch.size(0)
+
             train_loss_epoch = self.__running_loss / len(self.__train_loader)
 
             tn, fp, fn, tp = confusion_matrix(self.__train_labels, self.__train_outputs).ravel()
-            train_epoch_acc = accuracy_score(self.__train_labels, self.__train_outputs)*100
-            train_precision = precision_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
-            train_recall = recall_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
-            train_f1 = f1_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
-            train_specificty = calculate_specificity(self.__train_labels, self.__train_outputs)*100
-            train_npv = calculate_npv(self.__train_labels, self.__train_outputs)*100
+            train_epoch_acc = accuracy_score(self.__train_labels, self.__train_outputs) * 100
+            train_precision = precision_score(self.__train_labels, self.__train_outputs, zero_division=0) * 100
+            train_recall = recall_score(self.__train_labels, self.__train_outputs, zero_division=0) * 100
+            train_f1 = f1_score(self.__train_labels, self.__train_outputs, zero_division=0) * 100
+            train_specificty = calculate_specificity(self.__train_labels, self.__train_outputs) * 100
+            train_npv = calculate_npv(self.__train_labels, self.__train_outputs) * 100
 
-            ### Evaluation
-            self.__model.eval()
-            self.__validation_running_loss = 0.0
-            with torch.no_grad():
-                for step, batch in enumerate(self.__validation_loader):
-                    batch_size = len(batch[0][0])
-                    validation_bert_batch = batch[0][0].to(self.__device)
-                    validation_vb_batch = batch[0][1].to(self.__device)
-                    validation_pt_dem_batch = batch[0][2].to(self.__device)
-                    validation_label_batch = batch[0][3].to(self.__device)
-                    validation_image_id = batch[1]
+            # Validation loop
+            validation_metrics = self.evaluate_model(self.__model, self.__validation_loader, self.__device)
 
-                    # 1. Forward pass
-                    validation_pred = self.__model(validation_bert_batch, validation_vb_batch, validation_pt_dem_batch)
-                    validation_out = (validation_pred>self.threshold).float()
+            # Scheduler step
+            self.__scheduler.step(validation_metrics['validation_loss_epoch'])
 
-                    self.__validation_scores.append(validation_pred.detach().cpu().numpy().astype(float)[0])
-                    self.__validation_outputs.append(validation_out.cpu().numpy().astype(int)[0])
-                    self.__validation_labels.append(validation_label_batch.cpu().numpy().astype(int)[0])
-                    self.__validation_image_ids.append(validation_image_id[0])
+            # Save each epoch training metrics
+            self.__train_metrics[epoch + 1] = {
+                'train_loss': train_loss_epoch,
+                'train_accuracy': train_epoch_acc,
+                "train_specificity": train_specificty,
+                "train_precision": train_precision,
+                "train_recall": train_recall,
+                "train_f1": train_f1,
+                "train_npv": train_npv,
+                "train_tp": tp,
+                "train_fp": fp,
+                "train_fn": fn,
+                "train_tn": tn,
+                'validation_loss': validation_metrics['validation_loss_epoch'],
+                'validation_accuracy': validation_metrics['validation_epoch_acc'],
+                "validation_specificity": validation_metrics['validation_specificty'],
+                "validation_precision": validation_metrics['validation_precision'],
+                "validation_recall": validation_metrics['validation_recall'],
+                "validation_f1": validation_metrics['validation_f1'],
+                "validation_npv": validation_metrics['validation_npv'],
+                "validation_tp": validation_metrics['validation_tp'],
+                "validation_fp": validation_metrics['validation_fp'],
+                "validation_fn": validation_metrics['validation_fn'],
+                "validation_tn": validation_metrics['validation_tn'],
+                "learning_rate": self.__scheduler.get_last_lr()[0]
+            }
 
-                    # 2. Caculate loss/accuracy
-                    validation_loss = self.__criterion(validation_pred, validation_label_batch)     
-                    self.__validation_running_loss += validation_loss.item()*validation_label_batch.size(0)
+            self.__train_preds[epoch + 1] = {
+                "image_id": self.__train_image_ids,
+                "score": self.__train_scores,
+                "pred": self.__train_outputs,
+                "label": self.__train_labels
+            }
+            self.__validation_preds[epoch + 1] = {
+                "image_id": self.__validation_image_ids,
+                "score": self.__validation_scores,
+                "pred": self.__validation_outputs,
+                "label": self.__validation_labels
+            }
 
-                validation_loss_epoch = self.__validation_running_loss / len(self.__validation_loader)
-                
-                validation_tn, validation_fp, validation_fn, validation_tp = confusion_matrix(self.__train_labels, self.__train_outputs).ravel()
-                validation_epoch_acc = accuracy_score(self.__validation_labels, self.__validation_outputs)*100
-                validation_precision = precision_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-                validation_recall = recall_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-                validation_f1 = f1_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-                validation_specificty = calculate_specificity(self.__validation_labels, self.__validation_outputs)*100
-                validation_npv = calculate_npv(self.__validation_labels, self.__validation_outputs)*100
-
-            # 7. Scheduler step
-            self.__scheduler.step(validation_loss_epoch)
-
-            # safe each epoch training metrics
-            self.__train_metrics[epoch+1] = {'train_loss': train_loss_epoch, 'train_accuracy': train_epoch_acc, "train_specificity": train_specificty,
-                                             "train_precision": train_precision, "train_recall": train_recall, "train_f1": train_f1, "train_npv": train_npv,
-                                             "train_tp": tp, "train_fp": fp, "train_fn": fn, "train_tn": tn,
-                                             'validation_loss': validation_loss_epoch, 'validation_accuracy': validation_epoch_acc, "validation_specificity": validation_specificty,
-                                             "validation_precision": validation_precision, "validation_recall": validation_recall, "validation_f1": validation_f1, "validation_npv": validation_npv,
-                                             "validation_tp": validation_tp, "validation_fp": validation_fp, "validation_fn": validation_fn, "validation_tn": validation_tn,
-                                             "learning_rate": self.__scheduler.get_last_lr()[0]}
-            
-            self.__train_preds[epoch+1] = {"image_id": self.__train_image_ids, "score": self.__train_scores, "pred": self.__train_outputs, "label": self.__train_labels}
-            self.__validation_preds[epoch+1] = {"image_id": self.__validation_image_ids, "score": self.__validation_scores, "pred": self.__validation_outputs, "label": self.__validation_labels}
-
-            # early stopping if validation loss does not improve for patience
-            # Update best validation loss
-            # if validation_f1 > self.save_best_model.best_f1:
-            if validation_loss_epoch < self.save_best_model.best_val_loss:
-                # self.save_best_model(self.__model, self.__optimizer, self.__criterion, epoch, validation_f1)
-                # self.__best_f1_epoch = epoch
-                # save the trained model weights with the best validation loss
-                self.save_best_model(self.__model, self.__optimizer, self.__criterion, epoch, validation_loss_epoch)
+            # Early stopping if validation loss does not improve for patience
+            if validation_metrics['validation_loss_epoch'] < self.save_best_model.best_val_loss:
+                # Save the trained model weights with the best validation loss
+                self.save_best_model(self.__model, self.__optimizer, self.__criterion, epoch, validation_metrics['validation_loss_epoch'])
                 self.__best_val_loss_epoch = epoch
                 print(f"---------------------------------------------------")
-                print(f"Epoch: {epoch+1} | Train Loss: {train_loss_epoch:.5f}, Train Accuracy: {train_epoch_acc:.3f}% | Validation loss: {validation_loss_epoch:.5f}, Validation Accuracy: {validation_epoch_acc:.3f}%")
+                print(f"Epoch: {epoch + 1} | Train Loss: {train_loss_epoch:.5f}, Train Accuracy: {train_epoch_acc:.3f}% | Validation Loss: {validation_metrics['validation_loss_epoch']:.5f}, Validation Accuracy: {validation_metrics['validation_epoch_acc']:.3f}%")
                 print(f"Training | Precision: {train_precision:.3f}%, Recall: {train_recall:.3f}%, F1 Score: {train_f1:.3f}%")
-                print(f"Validation | Precision: {validation_precision:.3f}%, Recall: {validation_recall:.3f}%, F1 Score: {validation_f1:.3f}%")
+                print(f"Validation | Precision: {validation_metrics['validation_precision']:.3f}%, Recall: {validation_metrics['validation_recall']:.3f}%, F1 Score: {validation_metrics['validation_f1']:.3f}%")
 
             # Early stopping check
-            # if epoch - self.__best_f1_epoch >= self.patience:
             if epoch - self.__best_val_loss_epoch >= self.patience:
-                print(f"******** Early stopping at epoch {epoch+1} ********")
-                # print(f"*** Best F1 score = {self.save_best_model.best_f1:.3f}% at epoch {self.save_best_model.epoch+1} ***")
-                print(f"*** Best validation loss = {self.save_best_model.best_val_loss:.3f} at epoch {self.save_best_model.epoch+1} ***")
-
+                print(f"******** Early stopping at epoch {epoch + 1} ********")
+                print(f"*** Best validation loss = {self.save_best_model.best_val_loss:.3f} at epoch {self.save_best_model.epoch + 1} ***")
                 break
-        
-        # print last learning rate
-        print(f"Final learning rate = {self.__scheduler.get_last_lr()[0]}")
 
-        if self.save_train_metrics:
-            self.save_training_metrics(self.__train_metrics)
+            if self.save_train_metrics:
+                self.save_training_metrics(self.__train_metrics)
 
-        # saves results from the best epoch
-        self.__train_df = pd.DataFrame.from_dict(data=self.__train_preds[self.__best_val_loss_epoch+1])
-        self.save_predictions(self.__train_df, save_name=f"train_epoch{self.__best_val_loss_epoch+1}")
+            # Save results from the best epoch
+            self.__train_df = pd.DataFrame.from_dict(data=self.__train_preds[self.__best_val_loss_epoch + 1])
+            self.save_predictions(self.__train_df, save_name=f"train_epoch{self.__best_val_loss_epoch + 1}")
 
-        self.__validation_df = pd.DataFrame.from_dict(data=self.__validation_preds[self.__best_val_loss_epoch+1])
-        self.save_predictions(self.__validation_df, save_name=f"validation_epoch{self.__best_val_loss_epoch+1}")
-            
+            self.__validation_df = pd.DataFrame.from_dict(data=self.__validation_preds[self.__best_val_loss_epoch + 1])
+            self.save_predictions(self.__validation_df, save_name=f"validation_epoch{self.__best_val_loss_epoch + 1}")
+
+    def evaluate_model(self, model, validation_loader, device):
+        model.eval()
+        self.__validation_running_loss = 0.0
+        self.__validation_image_ids = []
+        self.__validation_scores = []
+        self.__validation_labels = []
+        self.__validation_outputs = []
+
+        with torch.no_grad():
+            for step, batch in enumerate(validation_loader):
+                batch_size = len(batch[0][0])
+                validation_bert_batch = batch[0][0].to(device)
+                validation_vb_batch = batch[0][1].to(device)
+                validation_pt_dem_batch = batch[0][2].to(device)
+                validation_label_batch = batch[0][3].to(device)
+                validation_image_id = batch[1]
+
+                # 1. Forward pass
+                validation_pred = model(validation_bert_batch, validation_vb_batch, validation_pt_dem_batch)
+                validation_out = (validation_pred > self.threshold).float()
+
+                self.__validation_scores.append(validation_pred.detach().cpu().numpy().astype(float)[0])
+                self.__validation_outputs.append(validation_out.cpu().numpy().astype(int)[0])
+                self.__validation_labels.append(validation_label_batch.cpu().numpy().astype(int)[0])
+                self.__validation_image_ids.append(validation_image_id[0])
+
+                # 2. Calculate loss/accuracy
+                validation_loss = self.__criterion(validation_pred, validation_label_batch)
+                self.__validation_running_loss += validation_loss.item() * validation_label_batch.size(0)
+
+        validation_loss_epoch = self.__validation_running_loss / len(validation_loader)
+        validation_tn, validation_fp, validation_fn, validation_tp = confusion_matrix(self.__validation_labels, self.__validation_outputs).ravel()
+        validation_epoch_acc = accuracy_score(self.__validation_labels, self.__validation_outputs) * 100
+        validation_precision = precision_score(self.__validation_labels, self.__validation_outputs, zero_division=0) * 100
+        validation_recall = recall_score(self.__validation_labels, self.__validation_outputs, zero_division=0) * 100
+        validation_f1 = f1_score(self.__validation_labels, self.__validation_outputs, zero_division=0) * 100
+        validation_specificty = calculate_specificity(self.__validation_labels, self.__validation_outputs) * 100
+        validation_npv = calculate_npv(self.__validation_labels, self.__validation_outputs) * 100
+
+        return {
+            'validation_loss_epoch': validation_loss_epoch,
+            'validation_epoch_acc': validation_epoch_acc,
+            'validation_precision': validation_precision,
+            'validation_recall': validation_recall,
+            'validation_f1': validation_f1,
+            'validation_specificty': validation_specificty,
+            'validation_npv': validation_npv,
+            'validation_tp': validation_tp,
+            'validation_fp': validation_fp,
+            'validation_fn': validation_fn,
+            'validation_tn': validation_tn
+        }
+    
     def train_model_losses(self):
         """
         Training for models that output individual predictions for loss backpropagation
@@ -581,7 +611,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
         self.__train_df = None
         self.__validation_df = None
         self.__best_val_loss_epoch = 0
-        # self.__best_f1_epoch = 0
+
         for epoch in tqdm(range(self.epochs), desc="Epoch"):
             ### Training
             self.__model.train()
@@ -589,10 +619,6 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
             self.__train_labels = []
             self.__train_scores = []
             self.__train_outputs = []
-            self.__validation_image_ids = []
-            self.__validation_scores = []
-            self.__validation_labels = []
-            self.__validation_outputs = []
             self.__running_loss = 0.0 
             # Loop over batches in an epoch using DataLoader
             for step, batch in enumerate(self.__train_loader):
@@ -605,7 +631,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
 
                 # 1. Forward pass
                 y_pred, out1, out2, out3 = self.__model(bert_batch, vb_batch, pt_dem_batch)
-                out = (y_pred>self.threshold).float()
+                out = (y_pred > self.threshold).float()
 
                 self.__train_scores.append(y_pred.detach().cpu().numpy().astype(float)[0])
                 self.__train_outputs.append(out.cpu().numpy().astype(int)[0])
@@ -621,7 +647,7 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
 
                 # Combine losses
                 loss = loss1 + loss2 + loss3 + loss_output
-                self.__running_loss += loss.item()*label_batch.size(0)
+                self.__running_loss += loss.item() * label_batch.size(0)
                         
                 # 3. Optimizer zero grad
                 self.__optimizer.zero_grad()
@@ -635,111 +661,148 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
             
                 # 6. Optimizer step
                 self.__optimizer.step()
-                self.__running_loss += loss.item()*label_batch.size(0)
+                self.__running_loss += loss.item() * label_batch.size(0)
                 
             train_loss_epoch = self.__running_loss / len(self.__train_loader)
 
             tn, fp, fn, tp = confusion_matrix(self.__train_labels, self.__train_outputs).ravel()
-            train_epoch_acc = accuracy_score(self.__train_labels, self.__train_outputs)*100
-            train_precision = precision_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
-            train_recall = recall_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
-            train_f1 = f1_score(self.__train_labels, self.__train_outputs, zero_division=0)*100
-            train_specificty = calculate_specificity(self.__train_labels, self.__train_outputs)*100
-            train_npv = calculate_npv(self.__train_labels, self.__train_outputs)*100
+            train_epoch_acc = accuracy_score(self.__train_labels, self.__train_outputs) * 100
+            train_precision = precision_score(self.__train_labels, self.__train_outputs, zero_division=0) * 100
+            train_recall = recall_score(self.__train_labels, self.__train_outputs, zero_division=0) * 100
+            train_f1 = f1_score(self.__train_labels, self.__train_outputs, zero_division=0) * 100
+            train_specificty = calculate_specificity(self.__train_labels, self.__train_outputs) * 100
+            train_npv = calculate_npv(self.__train_labels, self.__train_outputs) * 100
 
-            ### Evaluation
-            self.__model.eval()
-            self.__validation_running_loss = 0.0
-            with torch.no_grad():
-                for step, batch in enumerate(self.__validation_loader):
-                    batch_size = len(batch[0][0])
-                    validation_bert_batch = batch[0][0].to(self.__device)
-                    validation_vb_batch = batch[0][1].to(self.__device)
-                    validation_pt_dem_batch = batch[0][2].to(self.__device)
-                    validation_label_batch = batch[0][3].to(self.__device)
-                    validation_image_id = batch[1]
+            # Validation
+            validation_metrics = self.evaluate_model_losses(self.__model, self.__validation_loader, self.__device)
 
-                    # 1. Forward pass
-                    validation_pred, validation_out1, validation_out2, validation_out3 = self.__model(validation_bert_batch, validation_vb_batch, validation_pt_dem_batch)
-                    validation_out = (validation_pred>self.threshold).float()
+            # Scheduler step
+            self.__scheduler.step(validation_metrics['validation_loss_epoch'])
 
-                    self.__validation_scores.append(validation_pred.detach().cpu().numpy().astype(float)[0])
-                    self.__validation_outputs.append(validation_out.cpu().numpy().astype(int)[0])
-                    self.__validation_labels.append(validation_label_batch.cpu().numpy().astype(int)[0])
-                    self.__validation_image_ids.append(validation_image_id[0])
+            # Save each epoch training metrics
+            self.__train_metrics[epoch + 1] = {
+                'train_loss': train_loss_epoch,
+                'train_accuracy': train_epoch_acc,
+                "train_specificity": train_specificty,
+                "train_precision": train_precision,
+                "train_recall": train_recall,
+                "train_f1": train_f1,
+                "train_npv": train_npv,
+                "train_tp": tp,
+                "train_fp": fp,
+                "train_fn": fn,
+                "train_tn": tn,
+                'validation_loss': validation_metrics['validation_loss_epoch'],
+                'validation_accuracy': validation_metrics['validation_epoch_acc'],
+                "validation_specificity": validation_metrics['validation_specificty'],
+                "validation_precision": validation_metrics['validation_precision'],
+                "validation_recall": validation_metrics['validation_recall'],
+                "validation_f1": validation_metrics['validation_f1'],
+                "validation_npv": validation_metrics['validation_npv'],
+                "validation_tp": validation_metrics['validation_tp'],
+                "validation_fp": validation_metrics['validation_fp'],
+                "validation_fn": validation_metrics['validation_fn'],
+                "validation_tn": validation_metrics['validation_tn'],
+                "learning_rate": self.__scheduler.get_last_lr()[0]
+            }
 
-                    # 2. Caculate loss/accuracy
-                    # Calculate individual losses
-                    validation_loss1 = self.__criterion(validation_out1, validation_label_batch)
-                    validation_loss2 = self.__criterion(validation_out2, validation_label_batch)
-                    validation_loss3 = self.__criterion(validation_out3, validation_label_batch)
-                    validation_loss_output = self.__criterion(validation_pred, validation_label_batch)
+            self.__train_preds[epoch + 1] = {
+                "image_id": self.__train_image_ids,
+                "score": self.__train_scores,
+                "pred": self.__train_outputs,
+                "label": self.__train_labels
+            }
+            self.__validation_preds[epoch + 1] = {
+                "image_id": self.__validation_image_ids,
+                "score": self.__validation_scores,
+                "pred": self.__validation_outputs,
+                "label": self.__validation_labels
+            }
 
-                    # Combine losses
-                    validation_loss = validation_loss1 + validation_loss2 + validation_loss3 + validation_loss_output
-                    self.__validation_running_loss += validation_loss.item()*validation_label_batch.size(0)
-
-                validation_loss_epoch = self.__validation_running_loss / len(self.__validation_loader)
-
-                validation_tn, validation_fp, validation_fn, validation_tp = confusion_matrix(self.__validation_labels, self.__validation_outputs).ravel()
-                validation_epoch_acc = accuracy_score(self.__validation_labels, self.__validation_outputs)*100
-                validation_precision = precision_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-                validation_recall = recall_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-                validation_f1 = f1_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-                validation_specificty = calculate_specificity(self.__validation_labels, self.__validation_outputs)*100
-                validation_npv = calculate_npv(self.__validation_labels, self.__validation_outputs)*100
-
-            # 7. Scheduler step
-            self.__scheduler.step(validation_loss_epoch)
-
-            # safe each epoch training metrics
-            self.__train_metrics[epoch+1] = {'train_loss': train_loss_epoch, 'train_accuracy': train_epoch_acc, "train_specificity": train_specificty,
-                                             "train_precision": train_precision, "train_recall": train_recall, "train_f1": train_f1, "train_npv": train_npv,
-                                             "train_tp": tp, "train_fp": fp, "train_fn": fn, "train_tn": tn,
-                                             'validation_loss': validation_loss_epoch, 'validation_accuracy': validation_epoch_acc, "validation_specificity": validation_specificty,
-                                             "validation_precision": validation_precision, "validation_recall": validation_recall, "validation_f1": validation_f1, "validation_npv": validation_npv,
-                                             "validation_tp": validation_tp, "validation_fp": validation_fp, "validation_fn": validation_fn, "validation_tn": validation_tn,
-                                             "learning_rate": self.__scheduler.get_last_lr()[0]}
-            
-            self.__train_preds[epoch+1] = {"image_id": self.__train_image_ids, "score": self.__train_scores, "pred": self.__train_outputs, "label": self.__train_labels}
-            self.__validation_preds[epoch+1] = {"image_id": self.__validation_image_ids, "score": self.__validation_scores, "pred": self.__validation_outputs, "label": self.__validation_labels}
-
-            # early stopping if validation loss does not improve for patience
-            # Update best F1 epoch
-            # if validation_f1 > self.save_best_model.best_f1:
-            if validation_loss_epoch < self.save_best_model.best_val_loss:
-                # self.save_best_model(self.__model, self.__optimizer, self.__criterion, epoch, validation_f1)
-                # save the trained model weights with best validation loss
-                # self.__best_f1_epoch = epoch
-                self.save_best_model(self.__model, self.__optimizer, self.__criterion, epoch, validation_loss_epoch)
+            # Early stopping if validation loss does not improve for patience
+            if validation_metrics['validation_loss_epoch'] < self.save_best_model.best_val_loss:
+                # Save the trained model weights with the best validation loss
+                self.save_best_model(self.__model, self.__optimizer, self.__criterion, epoch, validation_metrics['validation_loss_epoch'])
                 self.__best_val_loss_epoch = epoch
                 print(f"---------------------------------------------------")
-                print(f"Epoch: {epoch+1} | Train Loss: {train_loss_epoch:.5f}, Train Accuracy: {train_epoch_acc:.3f}% | Validation loss: {validation_loss_epoch:.5f}, Validation Accuracy: {validation_epoch_acc:.3f}%")
+                print(f"Epoch: {epoch + 1} | Train Loss: {train_loss_epoch:.5f}, Train Accuracy: {train_epoch_acc:.3f}% | Validation Loss: {validation_metrics['validation_loss_epoch']:.5f}, Validation Accuracy: {validation_metrics['validation_epoch_acc']:.3f}%")
                 print(f"Training | Precision: {train_precision:.3f}%, Recall: {train_recall:.3f}%, F1 Score: {train_f1:.3f}%")
-                print(f"Validation | Precision: {validation_precision:.3f}%, Recall: {validation_recall:.3f}%, F1 Score: {validation_f1:.3f}%")
+                print(f"Validation | Precision: {validation_metrics['validation_precision']:.3f}%, Recall: {validation_metrics['validation_recall']:.3f}%, F1 Score: {validation_metrics['validation_f1']:.3f}%")
 
             # Early stopping check
-            # if epoch - self.__best_f1_epoch >= self.patience:
             if epoch - self.__best_val_loss_epoch >= self.patience:
-                print(f"******** Early stopping at epoch {epoch+1}******** ")
-                # print(f"*** Best F1 score = {self.save_best_model.best_f1:.3f}% at epoch {self.save_best_model.epoch+1} ***")
-                print(f"*** Best validation loss = {self.save_best_model.best_val_loss:.3f} at epoch {self.save_best_model.epoch+1} ***")
+                print(f"******** Early stopping at epoch {epoch + 1} ********")
+                print(f"*** Best validation loss = {self.save_best_model.best_val_loss:.3f} at epoch {self.save_best_model.epoch + 1} ***")
                 break
-        
-        # print last learning rate
-        print(f"Final learning rate = {self.__scheduler.get_last_lr()[0]}")
 
-        if self.save_train_metrics:
-            self.save_training_metrics(self.__train_metrics)
-        
-        # saves results from the best epoch
-        # self.__train_df = pd.DataFrame.from_dict(data=self.__train_preds[self.__best_f1_epoch+1])
-        self.__train_df = pd.DataFrame.from_dict(data=self.__train_preds[self.__best_val_loss_epoch+1])
-        self.save_predictions(self.__train_df, save_name=f"train_epoch{self.__best_val_loss_epoch+1}")
+            if self.save_train_metrics:
+                self.save_training_metrics(self.__train_metrics)
 
-        # self.__validation_df = pd.DataFrame.from_dict(data=self.__validation_preds[self.__best_f1_epoch+1])
-        self.__validation_df = pd.DataFrame.from_dict(data=self.__validation_preds[self.__best_val_loss_epoch+1])
-        self.save_predictions(self.__validation_df, save_name=f"validation_epoch{self.__best_val_loss_epoch+1}")
+            # Save results from the best epoch
+            self.__train_df = pd.DataFrame.from_dict(data=self.__train_preds[self.__best_val_loss_epoch + 1])
+            self.save_predictions(self.__train_df, save_name=f"train_epoch{self.__best_val_loss_epoch + 1}")
+
+            self.__validation_df = pd.DataFrame.from_dict(data=self.__validation_preds[self.__best_val_loss_epoch + 1])
+            self.save_predictions(self.__validation_df, save_name=f"validation_epoch{self.__best_val_loss_epoch + 1}")
+
+    def evaluate_model_losses(self, model, validation_loader, device):
+        model.eval()
+        self.__validation_running_loss = 0.0
+        self.__validation_image_ids = []
+        self.__validation_scores = []
+        self.__validation_labels = []
+        self.__validation_outputs = []
+
+        with torch.no_grad():
+            for step, batch in enumerate(validation_loader):
+                batch_size = len(batch[0][0])
+                validation_bert_batch = batch[0][0].to(device)
+                validation_vb_batch = batch[0][1].to(device)
+                validation_pt_dem_batch = batch[0][2].to(device)
+                validation_label_batch = batch[0][3].to(device)
+                validation_image_id = batch[1]
+
+                # 1. Forward pass
+                validation_pred, validation_out1, validation_out2, validation_out3 = model(validation_bert_batch, validation_vb_batch, validation_pt_dem_batch)
+                validation_out = (validation_pred > self.threshold).float()
+
+                self.__validation_scores.append(validation_pred.detach().cpu().numpy().astype(float)[0])
+                self.__validation_outputs.append(validation_out.cpu().numpy().astype(int)[0])
+                self.__validation_labels.append(validation_label_batch.cpu().numpy().astype(int)[0])
+                self.__validation_image_ids.append(validation_image_id[0])
+
+                # 2. Calculate loss/accuracy
+                validation_loss1 = self.__criterion(validation_out1, validation_label_batch)
+                validation_loss2 = self.__criterion(validation_out2, validation_label_batch)
+                validation_loss3 = self.__criterion(validation_out3, validation_label_batch)
+                validation_loss_output = self.__criterion(validation_pred, validation_label_batch)
+
+                # Combine losses
+                validation_loss = validation_loss1 + validation_loss2 + validation_loss3 + validation_loss_output
+                self.__validation_running_loss += validation_loss.item() * validation_label_batch.size(0)
+
+        validation_loss_epoch = self.__validation_running_loss / len(validation_loader)
+        validation_tn, validation_fp, validation_fn, validation_tp = confusion_matrix(self.__validation_labels, self.__validation_outputs).ravel()
+        validation_epoch_acc = accuracy_score(self.__validation_labels, self.__validation_outputs) * 100
+        validation_precision = precision_score(self.__validation_labels, self.__validation_outputs, zero_division=0) * 100
+        validation_recall = recall_score(self.__validation_labels, self.__validation_outputs, zero_division=0) * 100
+        validation_f1 = f1_score(self.__validation_labels, self.__validation_outputs, zero_division=0) * 100
+        validation_specificty = calculate_specificity(self.__validation_labels, self.__validation_outputs) * 100
+        validation_npv = calculate_npv(self.__validation_labels, self.__validation_outputs) * 100
+
+        return {
+            'validation_loss_epoch': validation_loss_epoch,
+            'validation_epoch_acc': validation_epoch_acc,
+            'validation_precision': validation_precision,
+            'validation_recall': validation_recall,
+            'validation_f1': validation_f1,
+            'validation_specificty': validation_specificty,
+            'validation_npv': validation_npv,
+            'validation_tp': validation_tp,
+            'validation_fp': validation_fp,
+            'validation_fn': validation_fn,
+            'validation_tn': validation_tn
+        }
 
     def predict(self):
         """
@@ -819,84 +882,3 @@ class Multimodal_VB_Fracture_Detector(nn.Module):
         """
         self.__train_metrics_df = pd.DataFrame.from_dict(train_metrics, orient="index")
         self.__train_metrics_df.to_csv(os.path.join(self.results_path, f"{self.save_name}_"+datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H-%M-%S')+f"_training_metrics.csv"), index=False)
-
-    # def evaluate_model(self, dataloader):
-    #     self.__model, self.__criterion, self.__optimizer, self.__scheduler = self.load_model(self.__predict_loader, self.fine_tuned_path)
-    #     self.__model.to(self.__device)
-
-    #     self.__loss_lst = []
-    #     self.__acc_lst = []
-
-    #     self.__preds = []
-    #     self.__scores = []
-    #     self.__image_ids = []
-    #     self.__running_loss = 0.0
-
-    #     if "Losses" not in self.model_name:
-    #         with torch.no_grad():
-    #             for step, batch in enumerate(dataloader):
-    #                 batch_size = len(batch[0][0])
-    #                 bert_batch = batch[0][0].to(self.__device)
-    #                 vb_batch = batch[0][1].to(self.__device)
-    #                 pt_dem_batch = batch[0][2].to(self.__device)
-    #                 label_batch = batch[0][3].to(self.__device)
-    #                 image_id = batch[1]
-    #                 # 1. Forward pass
-    #                 y_pred = self.__model(bert_batch, vb_batch, pt_dem_batch)
-    #                 out = (y_pred>self.threshold).float()
-
-    #                 self.__image_ids.append(image_id[0])
-    #                 self.__scores.append(y_pred.detach().cpu().numpy().astype(float)[0])
-    #                 self.__preds.append(out.detach().cpu().numpy().astype(int)[0])
-
-    #                 # 2. Calculate loss/accuracy
-    #                 self.__loss = self.__criterion(y_pred.to(self.__device), label_batch.to(self.__device))       
-    #                 self.__running_loss += self.__loss.item()*label_batch.size(0)
-
-    #             loss_total = self.__running_loss / len(dataloader)
-    #             self.__loss_lst.append(loss_total)
-
-    #             epoch_acc = accuracy_score(self.__validation_labels, self.__validation_outputs)*100
-    #             precision = precision_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-    #             recall = recall_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-    #             f1 = f1_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-    #             self.__acc_lst.append(epoch_acc)
-
-    #             print(f"Precision: {precision:.3f}%, Recall: {recall:.3f}%, F1 Score: {f1:.3f}%")
-
-    #         return loss_total, epoch_acc, precision, recall, f1
-        
-    #     elif "Losses" in self.model_name:
-    #         with torch.no_grad():
-    #             for step, batch in enumerate(dataloader):
-    #                 batch_size = len(batch[0][0])
-    #                 bert_batch = batch[0][0].to(self.__device)
-    #                 vb_batch = batch[0][1].to(self.__device)
-    #                 pt_dem_batch = batch[0][2].to(self.__device)
-    #                 label_batch = batch[0][3].to(self.__device)
-    #                 image_id = batch[1]
-    #                 # 1. Forward pass
-    #                 y_pred, out1, out2, out3 = self.__model(bert_batch, vb_batch, pt_dem_batch)
-    #                 out = (y_pred>self.threshold).float()
-
-    #                 self.__image_ids.append(image_id[0])
-    #                 self.__scores.append(y_pred.detach().cpu().numpy().astype(float)[0])
-    #                 self.__preds.append(out.detach().cpu().numpy().astype(int)[0])
-
-    #             # 2. Calculate loss/accuracy
-    #                 self.__loss = self.__criterion(y_pred.to(self.__device), label_batch.to(self.__device))       
-    #                 self.__running_loss += self.__loss.item()*label_batch.size(0)
-
-    #             loss_total = self.__running_loss / len(dataloader)
-    #             self.__loss_lst.append(loss_total)
-
-    #             epoch_acc = accuracy_score(self.__validation_labels, self.__validation_outputs)*100
-    #             precision = precision_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-    #             recall = recall_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-    #             f1 = f1_score(self.__validation_labels, self.__validation_outputs, zero_division=0)*100
-    #             self.__acc_lst.append(epoch_acc)
-
-    #             # self.__evaluation_metrics[epoch+1] = {'evaluation_loss': self.__loss_lst, 'evaluation_accuracy': self.__acc_lst}
-
-    #             print(f"Epoch: {epoch+1} | Loss: {loss_total:.5f}, Accuracy: {epoch_acc:.3f}%")
-    #             print(f"Precision: {precision:.3f}%, Recall: {recall:.3f}%, F1 Score: {f1:.3f}%")

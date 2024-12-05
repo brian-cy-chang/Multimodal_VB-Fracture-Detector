@@ -72,6 +72,13 @@ def main():
         elif Config.getstr("general", "mode").lower() == "predict":
             model.predict()
             model.save_predictions()
+    elif Config.getstr("general", "model_name") == "JointFusion_FC_Losses":
+        model = Multimodal_VB_Fracture_Detector(JointFusion_FC_Losses)
+        if Config.getstr("general", "mode").lower() == "train" :
+            model.train_model_losses()
+        elif Config.getstr("general", "mode").lower() == "predict":
+            model.predict()
+            model.save_predictions()
     elif Config.getstr("general", "model_name") == "JointFusion_FC_Attention_BeforeConcatenation":
         model = Multimodal_VB_Fracture_Detector(JointFusion_FC_Attention_BeforeConcatenation)
         if Config.getstr("general", "mode").lower() == "train" :
