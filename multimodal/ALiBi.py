@@ -12,7 +12,6 @@ def get_relative_positions(seq_len: int) -> torch.tensor:
     y = torch.arange(seq_len)[:, None]
     return x - y
 
-
 def get_alibi_slope(num_heads):
     x = (2 ** 8) ** (1 / num_heads)
     return (
@@ -46,7 +45,7 @@ class ALiBiMultiHeadAttention(nn.Module):
                 "mask", torch.tril(torch.ones(1, 1, config.max_len, config.max_len)).to(config.device)
             )
 
-    def forward(self, x: torch.tensor, attention_mask: torch.tensor = None) -> torch.tensor:
+    def forward(self, x: torch.tensor) -> torch.tensor:
         batch_size, seq_len, _ = x.shape
 
         key, query, value = self.kqv(x).chunk(3, dim=-1)
@@ -57,9 +56,6 @@ class ALiBiMultiHeadAttention(nn.Module):
         bias = (self.m * get_relative_positions(seq_len).to(x.device)).unsqueeze(0)
 
         score = torch.matmul(query, key) / self.scale + bias
-
-        if attention_mask is not None:
-            score = score.masked_fill(attention_mask[:, None, None, :] == 0, float("-inf"))
 
         if self.causal:
             score = score.masked_fill(
@@ -105,7 +101,7 @@ class ALiBiTransformerEncoder(nn.Module):
         self.layers = nn.ModuleList([ALiBiTransformerLayer(config) for _ in range(config.num_layers)])
         self.norm = nn.LayerNorm(config.d_model).to(config.device)
 
-    def forward(self, x: torch.tensor, attention_mask: torch.tensor = None) -> torch.tensor:
+    def forward(self, x: torch.tensor) -> torch.tensor:
         for layer in self.layers:
             x = layer(x)
         return self.norm(x)

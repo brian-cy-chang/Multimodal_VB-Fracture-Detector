@@ -1112,6 +1112,7 @@ class JointFusion_Transformer(nn.Module):
                                            )
 
         self.bn = nn.BatchNorm1d(self.hidden_size)
+        self.adaptive_avg_pool = nn.AdaptiveAvgPool1d(output_size=1)
 
         # Fully connected layers for x2 and x3
         self.fc_vb = nn.Linear(self.vb_dim, 32)
@@ -1123,7 +1124,7 @@ class JointFusion_Transformer(nn.Module):
     def forward(self, x1, x2, x3):      
         # Create attention mask for bert events
         mask = (x1.sum(dim=-1) != 0).float()
-        extended_attention_mask = (1.0 - mask) * -100000.0
+        extended_attention_mask = (1.0 - mask) * -10000.0
 
         # Apply transformer to x1
         x1 = x1.transpose(0, 1)
@@ -1132,8 +1133,9 @@ class JointFusion_Transformer(nn.Module):
         # Apply batch normalization
         x1 = self.bn(x1.transpose(0, 1))
 
-        # Pooling
-        x1 = x1.mean(dim=2)
+        # Max Pooling
+        # x1 = x1.mean(dim=1)
+        x1 = self.adaptive_max_pool(x1.transpose(1, 2))
 
         # Process x2 and x3
         x2 = F.leaky_relu(self.fc_vb(x2))
@@ -1179,6 +1181,7 @@ class JointFusion_ALiBi_Transformer(nn.Module):
 
         self.alibi = ALiBiTransformerEncoder(self.alibi_config)        
         self.bn = nn.BatchNorm1d(self.bert_seq_length)
+        self.adaptive_avg_pool = nn.AdaptiveAvgPool1d(output_size=1)
 
         # Fully connected layers for x2 and x3
         self.fc_vb = nn.Linear(self.vb_dim, 32)
@@ -1188,18 +1191,15 @@ class JointFusion_ALiBi_Transformer(nn.Module):
         self.classifier = nn.Linear(self.hidden_size+32+32, self.batch_size)
 
     def forward(self, x1, x2, x3):      
-        # Create attention mask for bert events
-        mask = (x1.sum(dim=-1) != 0).float()
-        extended_attention_mask = (1.0 - mask) * -100000.0
-
         # Apply transformer to x1
-        x1 = self.alibi(x1, attention_mask=extended_attention_mask)
+        x1 = self.alibi(x1)
 
         # Apply batch normalization
         x1 = self.bn(x1)
 
-        # Pooling
-        x1 = x1.mean(dim=1)
+        # Max Pooling
+        # x1 = x1.mean(dim=1)
+        x1 = self.adaptive_avg_pool(x1.transpose(1, 2))
 
         # Process x2 and x3
         x2 = F.leaky_relu(self.fc_vb(x2))
