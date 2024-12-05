@@ -1118,12 +1118,12 @@ class JointFusion_Transformer(nn.Module):
         self.fc_pt_dem = nn.Linear(self.pt_dem_dim, 32)
 
         # Final classification layer
-        self.classifier = nn.Linear(self.bert_seq_length+32+32, self.batch_size)
+        self.classifier = nn.Linear(self.hidden_size+32+32, self.batch_size)
 
     def forward(self, x1, x2, x3):      
         # Create attention mask for bert events
         mask = (x1.sum(dim=-1) != 0).float()
-        extended_attention_mask = (1.0 - mask) * -10000.0
+        extended_attention_mask = (1.0 - mask) * -100000.0
 
         # Apply transformer to x1
         x1 = x1.transpose(0, 1)
