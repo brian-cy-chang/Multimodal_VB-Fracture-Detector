@@ -1190,7 +1190,7 @@ class JointFusion_ALiBi_Transformer(nn.Module):
     def forward(self, x1, x2, x3):      
         # Create attention mask for bert events
         mask = (x1.sum(dim=-1) != 0).float()
-        extended_attention_mask = (1.0 - mask) * -10000.0
+        extended_attention_mask = (1.0 - mask) * -100000.0
 
         # Apply transformer to x1
         x1 = self.alibi(x1, attention_mask=extended_attention_mask)
