@@ -5,7 +5,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from config import Config
-from multimodal.ALiBi import ALiBiTransformerEncoder, ALiBiConfig
 
 class Attention(nn.Module):
     """
@@ -1082,8 +1081,8 @@ class JointFusion_CNN_Losses_Reshape(nn.Module):
 """ Transformer-based models """
 class JointFusion_Transformer(nn.Module):
     """
-    Joint fusion model with transformer 
-        encoder for BERT-EE outputs
+    Joint fusion model with transformer encoder for BERT-EE outputs
+    If bert_mode = "discrete", contextual embeddings for categorical data
     """
     def __init__(self, batch_size, bert_seq_length, bert_dim, vb_dim, pt_dem_dim, hidden_size, dropout_rate=0.5):
         super(JointFusion_Transformer, self).__init__()
@@ -1093,51 +1092,74 @@ class JointFusion_Transformer(nn.Module):
         self.vb_dim = vb_dim
         self.pt_dem_dim = pt_dem_dim
         self.dropout_rate = dropout_rate
-        if Config.getstr("bert", "bert_mode") == "discrete":
-            self.num_heads = 3
-            if Config.getstr("preprocess", "encode_mode") == "onehot":
-                self.hidden_size = 15
-            elif Config.getstr("preprocess", "encode_mode") == "label":
-                self.hidden_size = 3
-        elif Config.getstr("bert", "bert_mode") == "cls":
-            self.hidden_size = 768
-            self.num_heads = 32
-        
-        self.transformer = nn.TransformerEncoder(
-                nn.TransformerEncoderLayer(d_model=self.hidden_size, 
-                                           nhead=self.num_heads,
-                                           batch_first=False, 
-                                           norm_first=True), 
-                                           num_layers=8,
-                                           )
 
-        self.bn = nn.BatchNorm1d(self.hidden_size)
-        self.adaptive_avg_pool = nn.AdaptiveAvgPool1d(output_size=1)
+        bert_mode = Config.getstr("bert", "bert_mode")
+        encode_mode = Config.getstr("preprocess", "encode_mode")
+
+        if bert_mode == "discrete":
+            self._init_discrete_mode(encode_mode)
+        elif bert_mode == "cls":
+            self._init_cls_mode()
 
         # Fully connected layers for x2 and x3
-        self.fc_vb = nn.Linear(self.vb_dim, 32)
-        self.fc_pt_dem = nn.Linear(self.pt_dem_dim, 32)
+        self.fc_vb = nn.Linear(self.vb_dim, 16)
+        self.fc_pt_dem = nn.Linear(self.pt_dem_dim, 16)
 
         # Final classification layer
-        self.classifier = nn.Linear(self.hidden_size+32+32, self.batch_size)
+        self.classifier = nn.Linear(self.bert_seq_length + 32, self.batch_size)
+
+    def _init_discrete_mode(self, encode_mode):
+        self.num_heads = 3
+        self.embedding_dim = 16
+
+        if encode_mode == "onehot":
+            self.num_categorical_features = [2] * 15
+        elif encode_mode == "label":
+            self.num_categorical_features = [11, 11, 11]
+
+        self.embeddings = nn.ModuleList([
+            nn.Embedding(num_categories, self.embedding_dim) 
+            for num_categories in self.num_categorical_features
+        ])
+
+        self.transformer_discrete = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(
+                d_model=self.embedding_dim * len(self.num_categorical_features), 
+                nhead=self.num_heads,
+                batch_first=False, 
+                norm_first=True
+            ), 
+            num_layers=8,
+        )
+        self.fc_bert_discrete = nn.Linear(self.embedding_dim * len(self.num_categorical_features), 1)
+
+    def _init_cls_mode(self):
+        self.hidden_size = 768
+        self.num_heads = 32
+        self.transformer_cls = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(
+                d_model=self.hidden_size, 
+                nhead=self.num_heads,
+                batch_first=False, 
+                norm_first=False
+            ), 
+            num_layers=8,
+        )
+        self.fc_bert_cls = nn.Linear(self.hidden_size, 1)
 
     def forward(self, x1, x2, x3):      
         # Create attention mask for bert events
         mask = (x1.sum(dim=-1) != 0).float()
         extended_attention_mask = (1.0 - mask) * -10000.0
 
-        # Apply transformer to x1
-        x1 = x1.transpose(0, 1)
-        x1 = self.transformer(x1, src_key_padding_mask=extended_attention_mask)
+        bert_mode = Config.getstr("bert", "bert_mode")
 
-        # Apply batch normalization
-        x1 = self.bn(x1.transpose(0, 1))
+        if bert_mode == "discrete":
+            x1 = self._process_discrete(x1, extended_attention_mask)
+        elif bert_mode == "cls":
+            x1 = self._process_cls(x1, extended_attention_mask)
 
-        # Max Pooling
-        # x1 = x1.mean(dim=1)
-        x1 = self.adaptive_max_pool(x1.transpose(1, 2))
-
-        # Process x2 and x3
+        # Fully connected layers
         x2 = F.leaky_relu(self.fc_vb(x2))
         x3 = F.leaky_relu(self.fc_pt_dem(x3))
 
@@ -1154,66 +1176,14 @@ class JointFusion_Transformer(nn.Module):
 
         return out
 
-class JointFusion_ALiBi_Transformer(nn.Module):
-    """
-    Joint fusion model with ALiBi transformer 
-        encoder for BERT-EE outputs
-    """
-    def __init__(self, batch_size, bert_seq_length, bert_dim, vb_dim, pt_dem_dim, hidden_size, dropout_rate=0.5):
-        super(JointFusion_ALiBi_Transformer, self).__init__()
-        self.batch_size = batch_size
-        self.bert_seq_length = bert_seq_length
-        self.bert_dim = bert_dim
-        self.vb_dim = vb_dim
-        self.pt_dem_dim = pt_dem_dim
-        self.dropout_rate = dropout_rate
-        self.num_layers = 8
-        if Config.getstr("bert", "bert_mode") == "discrete":
-            self.num_heads = 3
-            if Config.getstr("preprocess", "encode_mode") == "onehot":
-                self.hidden_size = 15
-            elif Config.getstr("preprocess", "encode_mode") == "label":
-                self.hidden_size = 3
-        elif Config.getstr("bert", "bert_mode") == "cls":
-            self.hidden_size = 768
-            self.num_heads = 32
-        self.alibi_config = ALiBiConfig(num_layers=self.num_layers, d_model=self.bert_dim, num_heads=self.num_heads, max_len=256)
+    def _process_discrete(self, x1, extended_attention_mask):
+        x1 = x1.view(-1, len(self.num_categorical_features)).long()
+        x_embedded = [embedding(x1[:, i]) for i, embedding in enumerate(self.embeddings)]
+        x_embedded = torch.cat(x_embedded, dim=-1)
+        x_embedded = x_embedded.view(self.batch_size, self.bert_seq_length, -1)
+        x1 = self.transformer_discrete(x_embedded.transpose(0, 1), src_key_padding_mask=extended_attention_mask)
+        return F.leaky_relu(self.fc_bert_discrete(x1))
 
-        self.alibi = ALiBiTransformerEncoder(self.alibi_config)        
-        self.bn = nn.BatchNorm1d(self.bert_seq_length)
-        self.adaptive_avg_pool = nn.AdaptiveAvgPool1d(output_size=1)
-
-        # Fully connected layers for x2 and x3
-        self.fc_vb = nn.Linear(self.vb_dim, 32)
-        self.fc_pt_dem = nn.Linear(self.pt_dem_dim, 32)
-
-        # Final classification layer
-        self.classifier = nn.Linear(self.hidden_size+32+32, self.batch_size)
-
-    def forward(self, x1, x2, x3):      
-        # Apply transformer to x1
-        x1 = self.alibi(x1)
-
-        # Apply batch normalization
-        x1 = self.bn(x1)
-
-        # Max Pooling
-        # x1 = x1.mean(dim=1)
-        x1 = self.adaptive_avg_pool(x1.transpose(1, 2))
-
-        # Process x2 and x3
-        x2 = F.leaky_relu(self.fc_vb(x2))
-        x3 = F.leaky_relu(self.fc_pt_dem(x3))
-
-        x1 = x1.squeeze()
-        x2 = x2.squeeze()
-        x3 = x3.squeeze()
-
-        # Concatenate all modalities
-        out = torch.cat((x1, x2, x3))
-
-        # Final classification
-        out = self.classifier(out)
-        out = torch.sigmoid(out)
-
-        return out
+    def _process_cls(self, x1, extended_attention_mask):
+        x1 = self.transformer_cls(x1.transpose(0, 1), src_key_padding_mask=extended_attention_mask)
+        return F.leaky_relu(self.fc_bert_cls(x1))
