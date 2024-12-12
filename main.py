@@ -133,12 +133,6 @@ def main():
             model.train_model()
         elif Config.getstr("general", "mode").lower() == "predict":
             model.predict()
-    elif Config.getstr("general", "model_name") == "JointFusion_ALiBi_Transformer":
-        model = Multimodal_VB_Fracture_Detector(JointFusion_ALiBi_Transformer)
-        if Config.getstr("general", "mode").lower() == "train" :
-            model.train_model()
-        elif Config.getstr("general", "mode").lower() == "predict":
-            model.predict()
             
 if __name__ == '__main__':
     main()
