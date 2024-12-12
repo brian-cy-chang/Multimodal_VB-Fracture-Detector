@@ -1106,7 +1106,7 @@ class JointFusion_Transformer(nn.Module):
         self.fc_pt_dem = nn.Linear(self.pt_dem_dim, 16)
 
         # Final classification layer
-        self.classifier = nn.Linear(self.bert_seq_length + 32, self.batch_size)
+        self.classifier = nn.Linear(self.bert_seq_length + 16 + 16, self.batch_size)
 
     def _init_discrete_mode(self, encode_mode):
         self.num_heads = 3
