@@ -1126,6 +1126,7 @@ class JointFusion_Transformer(nn.Module):
             nn.TransformerEncoderLayer(
                 d_model=self.embedding_dim * len(self.num_categorical_features), 
                 nhead=self.num_heads,
+                dropout=self.dropout_rate,
                 batch_first=False, 
                 norm_first=True
             ), 
@@ -1140,6 +1141,7 @@ class JointFusion_Transformer(nn.Module):
             nn.TransformerEncoderLayer(
                 d_model=self.hidden_size, 
                 nhead=self.num_heads,
+                dropout=self.dropout_rate,
                 batch_first=False, 
                 norm_first=False
             ), 
