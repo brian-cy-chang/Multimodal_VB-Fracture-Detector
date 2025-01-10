@@ -18,6 +18,7 @@ def main():
     parser.add_argument('--general_save_name', default=None)
     parser.add_argument('--general_save_train_metrics', action='store_true', default=None)
     parser.add_argument('--bert_bert_mode', default=None)
+    parser.add_argument('--bert_discrete_categories', default=None)
     parser.add_argument('--bert_discrete_max_length_pad', default=None)
     parser.add_argument('--bert_cls_max_length_pad', default=None)
     parser.add_argument('--bert_train_discrete_file', default=None)
