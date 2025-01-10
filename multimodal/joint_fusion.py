@@ -1098,53 +1098,91 @@ class JointFusion_Transformer(nn.Module):
             self._init_discrete_mode()
         elif bert_mode == "cls":
             self._init_cls_mode()
-
+      
         # Fully connected layers for x2 and x3
         self.fc_vb = nn.Linear(self.vb_dim, 16)
         self.fc_pt_dem = nn.Linear(self.pt_dem_dim, 16)
 
-        # Final classification layer
-        self.classifier = nn.Linear(self.bert_seq_length + 16 + 16, self.batch_size)
-
     def _init_discrete_mode(self):
-        self.num_heads = 3
-        self.embedding_dim = 16
         self.bert_discrete_list = Config.getlist("bert", "discrete_categories")
-        self.num_categorical_features = [int(item) for item in self.bert_discrete_list]
+        self.categories = [int(item) for item in self.bert_discrete_list]
 
-        self.embeddings = nn.ModuleList([
-            nn.Embedding(num_categories, self.embedding_dim) 
-            for num_categories in self.num_categorical_features
-        ])
+        self.num_categories = len(self.categories)
+        self.num_unique_categories = sum(self.categories)
 
+        self.num_special_tokens = 1
+        total_tokens = self.num_unique_categories + self.num_special_tokens
+        
+        categories_offset = F.pad(torch.tensor(list(self.categories)), (1, 0), value = self.num_special_tokens)
+        categories_offset = categories_offset.cumsum(dim = -1)[:-1]
+        self.register_buffer('categories_offset', categories_offset)
+    
+        self.embedding_dim = 16
+        self.categorical_embeds = nn.Embedding(total_tokens, self.embedding_dim)
+
+        self.num_heads = 4
         self.transformer_discrete = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(
-                d_model=self.embedding_dim * len(self.num_categorical_features), 
+                d_model=self.embedding_dim ,
                 nhead=self.num_heads,
                 dropout=self.dropout_rate,
-                batch_first=False, 
+                batch_first=False,
                 norm_first=True
-            ), 
+            ),
             num_layers=8,
         )
-        self.fc_bert_discrete = nn.Linear(self.embedding_dim * len(self.num_categorical_features), 1)
+        self.fc_bert_discrete = nn.Linear(self.embedding_dim, 1)
+        self.cls_token = nn.Parameter(torch.randn(1, 1, self.embedding_dim))
 
+        # Final classification layer
+        self.classifier = nn.Linear(1 + 16 + 16, self.batch_size)
+    
+    def _process_discrete(self, x1, extended_attention_mask=None):
+        # Offset categorical indices, no reshaping here
+        x1 = x1.long() + self.categories_offset
+        
+        # Reshape the input before embedding
+        x1 = x1.view(x1.shape[0], x1.shape[1] * x1.shape[2])
+        
+        # Embed all categorical indices using the single embedding layer
+        x_embedded = self.categorical_embeds(x1)
+        
+        # cls token prepending
+        b = x_embedded.shape[0]
+        cls_tokens = repeat(self.cls_token, '1 1 d -> b 1 d', b = b)
+       
+        x_embedded = torch.cat((cls_tokens, x_embedded), dim = 1)
+
+        # Adjust attention mask to account for CLS token
+        new_mask = torch.cat((torch.zeros((b, 1), dtype=extended_attention_mask.dtype, device=extended_attention_mask.device),
+                             extended_attention_mask.repeat(1, self.num_categories)), dim=1)
+         
+        x1 = self.transformer_discrete(x_embedded.transpose(0, 1), src_key_padding_mask=new_mask)
+        
+        #take CLS token
+        x1 = x1[0]
+    
+        return F.leaky_relu(self.fc_bert_discrete(x1))
+    
     def _init_cls_mode(self):
         self.hidden_size = 768
         self.num_heads = 32
         self.transformer_cls = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(
-                d_model=self.hidden_size, 
+                d_model=self.hidden_size,
                 nhead=self.num_heads,
                 dropout=self.dropout_rate,
-                batch_first=False, 
+                batch_first=False,
                 norm_first=False
-            ), 
+            ),
             num_layers=8,
         )
         self.fc_bert_cls = nn.Linear(self.hidden_size, 1)
 
-    def forward(self, x1, x2, x3):      
+        # Final classification layer
+        self.classifier = nn.Linear(self.bert_seq_length + 16 + 16, self.batch_size)
+
+    def forward(self, x1, x2, x3):
         # Create attention mask for bert events
         mask = (x1.sum(dim=-1) != 0).float()
         extended_attention_mask = (1.0 - mask) * -10000.0
@@ -1160,7 +1198,7 @@ class JointFusion_Transformer(nn.Module):
         x2 = F.leaky_relu(self.fc_vb(x2))
         x3 = F.leaky_relu(self.fc_pt_dem(x3))
 
-        x1 = x1.squeeze()
+        x1 = x1.view(-1)
         x2 = x2.squeeze()
         x3 = x3.squeeze()
 
@@ -1172,14 +1210,6 @@ class JointFusion_Transformer(nn.Module):
         out = torch.sigmoid(out)
 
         return out
-
-    def _process_discrete(self, x1, extended_attention_mask):
-        x1 = x1.view(-1, len(self.num_categorical_features)).long()
-        x_embedded = [embedding(x1[:, i]) for i, embedding in enumerate(self.embeddings)]
-        x_embedded = torch.cat(x_embedded, dim=-1)
-        x_embedded = x_embedded.view(self.batch_size, self.bert_seq_length, -1)
-        x1 = self.transformer_discrete(x_embedded.transpose(0, 1), src_key_padding_mask=extended_attention_mask)
-        return F.leaky_relu(self.fc_bert_discrete(x1))
 
     def _process_cls(self, x1, extended_attention_mask):
         x1 = self.transformer_cls(x1.transpose(0, 1), src_key_padding_mask=extended_attention_mask)
