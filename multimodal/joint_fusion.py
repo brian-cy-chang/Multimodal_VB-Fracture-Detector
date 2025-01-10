@@ -1094,10 +1094,8 @@ class JointFusion_Transformer(nn.Module):
         self.dropout_rate = dropout_rate
 
         bert_mode = Config.getstr("bert", "bert_mode")
-        encode_mode = Config.getstr("preprocess", "encode_mode")
-
         if bert_mode == "discrete":
-            self._init_discrete_mode(encode_mode)
+            self._init_discrete_mode()
         elif bert_mode == "cls":
             self._init_cls_mode()
 
@@ -1108,14 +1106,11 @@ class JointFusion_Transformer(nn.Module):
         # Final classification layer
         self.classifier = nn.Linear(self.bert_seq_length + 16 + 16, self.batch_size)
 
-    def _init_discrete_mode(self, encode_mode):
+    def _init_discrete_mode(self):
         self.num_heads = 3
         self.embedding_dim = 16
-
-        if encode_mode == "onehot":
-            self.num_categorical_features = [2] * 15
-        elif encode_mode == "label":
-            self.num_categorical_features = [11, 11, 11]
+        self.bert_discrete_list = Config.getlist("bert", "discrete_categories")
+        self.num_categorical_features = [int(item) for item in self.bert_discrete_list]
 
         self.embeddings = nn.ModuleList([
             nn.Embedding(num_categories, self.embedding_dim) 
