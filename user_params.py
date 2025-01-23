@@ -4,9 +4,9 @@ User-defined dictionaries for multimodal data preprocessing
 import numpy as np
 
 # BERT discrete events dictionary for label encoding
-BERT_FRACTURE_DICT = {"spine": 8, "UE": 1, "LE": 2, "chest": 9, "pelvis": 4, "head": 5, "unspecified": 6, "hip": 7, "no_mention": 3, np.NaN: 10,
-                      "incidental": 1, "traumatic": 2, "no_mention": 3, np.NaN: 10,
-                      "absent": 2, "present": 1, "possible": 4, "no_mention": 3, np.NaN: 10,
+BERT_FRACTURE_DICT = {"spine": 8, "UE": 10, "LE": 2, "chest": 9, "pelvis": 4, "head": 5, "unspecified": 6, "hip": 7, "no_mention": 3, np.NaN: 1,
+                      "incidental": 4, "traumatic": 2, "no_mention": 3, np.NaN: 1,
+                      "absent": 5, "present": 2, "possible": 4, "no_mention": 3, np.NaN: 1,
                     }
 
 # columns for one-hot encoding
