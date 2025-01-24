@@ -6,12 +6,12 @@ import torch.nn.functional as F
 
 from config import Config
 
-class Attention(nn.Module):
+class FeatureWeightingAttention(nn.Module):
     """
     Attention mechanism for the multimodal model
     """
     def __init__(self, input_dim, hidden_dim):
-        super(Attention, self).__init__()
+        super(FeatureWeightingAttention, self).__init__()
         self.fc1 = nn.Linear(input_dim, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, round(hidden_dim/2))
         self.fc3 = nn.Linear(round(hidden_dim/2), input_dim)
@@ -399,11 +399,11 @@ class JointFusion_FC_Attention_BeforeConcatenation(nn.Module):
         vb_size = 8
         pt_dem_size = 16
     
-        self.attention_bert = Attention(bert_size, self.hidden_size)
-        self.attention_vb = Attention(vb_size, self.hidden_size)
-        self.attention_pt_dem = Attention(pt_dem_size, self.hidden_size)
+        self.attention_bert = FeatureWeightingAttention(bert_size, self.hidden_size)
+        self.attention_vb = FeatureWeightingAttention(vb_size, self.hidden_size)
+        self.attention_pt_dem = FeatureWeightingAttention(pt_dem_size, self.hidden_size)
 
-        self.attention = Attention(bert_size+vb_size+pt_dem_size, self.hidden_size)
+        self.attention = FeatureWeightingAttention(bert_size+vb_size+pt_dem_size, self.hidden_size)
         self.classifier = nn.Linear(bert_size + vb_size + pt_dem_size, self.batch_size)
 
     def forward(self, x1, x2, x3):
@@ -470,7 +470,7 @@ class JointFusion_FC_Attention_AfterConcatenation(nn.Module):
         vb_size = 8
         pt_dem_size = 16
 
-        self.attention = Attention(bert_size+vb_size+pt_dem_size, self.hidden_size)
+        self.attention = FeatureWeightingAttention(bert_size+vb_size+pt_dem_size, self.hidden_size)
         self.classifier = nn.Linear(bert_size + vb_size + pt_dem_size, self.batch_size)
 
     def forward(self, x1, x2, x3):
@@ -701,7 +701,7 @@ class JointFusion_CNN_Attention_AfterConcatenation(nn.Module):
         vb_size = self.channel_4
         pt_dem_size = self.channel_4
 
-        self.attention = Attention(bert_size +vb_size + pt_dem_size, self.channel_2)
+        self.attention = FeatureWeightingAttention(bert_size +vb_size + pt_dem_size, self.channel_2)
         self.classifier = nn.Linear(bert_size + vb_size + pt_dem_size, self.batch_size)
 
     def forward(self, x1, x2, x3):
@@ -775,11 +775,11 @@ class JointFusion_CNN_Attention_BeforeConcatenation(nn.Module):
         vb_size = self.channel_4
         pt_dem_size = self.channel_4
 
-        self.attention_bert = Attention(bert_size, self.channel_2)
-        self.attention_vb = Attention(vb_size, self.channel_2)
-        self.attention_pt_dem = Attention(pt_dem_size, self.channel_2)
+        self.attention_bert = FeatureWeightingAttention(bert_size, self.channel_2)
+        self.attention_vb = FeatureWeightingAttention(vb_size, self.channel_2)
+        self.attention_pt_dem = FeatureWeightingAttention(pt_dem_size, self.channel_2)
 
-        self.attention = Attention(bert_size + vb_size + pt_dem_size, self.channel_2)
+        self.attention = FeatureWeightingAttention(bert_size + vb_size + pt_dem_size, self.channel_2)
         self.classifier = nn.Linear(bert_size + vb_size + pt_dem_size, self.batch_size)
 
     def forward(self, x1, x2, x3):
