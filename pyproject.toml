@@ -2,7 +2,7 @@
 name = "multimodal"
 version = "0.1.0"
 description = ""
-authors = ["bcc92 <bcc92@uw.edu>"]
+authors = []
 readme = "README.md"
 
 [tool.poetry.dependencies]
